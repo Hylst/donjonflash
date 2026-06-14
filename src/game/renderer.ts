@@ -140,6 +140,7 @@ function buildLights(state: GameState, time: number): Light[] {
 
 function applyLighting(ctx: CanvasRenderingContext2D, lights: Light[]): void {
   const { w, h } = dims;
+  const margin = 300;
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
   const amb = ctx.createLinearGradient(0, 0, 0, h);
@@ -150,6 +151,7 @@ function applyLighting(ctx: CanvasRenderingContext2D, lights: Light[]): void {
   ctx.fillRect(0, 0, w, h);
 
   for (const l of lights) {
+    if (l.x + l.r < -margin || l.x - l.r > w + margin || l.y + l.r < -margin || l.y - l.r > h + margin) continue;
     const g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r);
     g.addColorStop(0, 'rgba(255,255,255,1)');
     g.addColorStop(0.65, 'rgba(220,220,220,0.85)');
@@ -160,6 +162,7 @@ function applyLighting(ctx: CanvasRenderingContext2D, lights: Light[]): void {
 
   ctx.globalCompositeOperation = 'lighter';
   for (const l of lights) {
+    if (l.x + l.r < -margin || l.x - l.r > w + margin || l.y + l.r < -margin || l.y - l.r > h + margin) continue;
     const g = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.r * 0.95);
     g.addColorStop(0, l.color + (0.2 * l.intensity) + ')');
     g.addColorStop(0.5, l.color + (0.07 * l.intensity) + ')');
@@ -265,8 +268,7 @@ function renderWall(ctx: CanvasRenderingContext2D, wall: Wall, time: number): vo
 
   if (tex.wallPattern) {
     ctx.save();
-    const pat = ctx.createPattern(tex.wallImg!, 'repeat')!;
-    ctx.fillStyle = pat;
+    ctx.fillStyle = tex.wallPattern;
     ctx.translate(wall.x, wall.y); ctx.fillRect(0, 0, wall.width, wall.height);
     ctx.restore();
     ctx.fillStyle = isPillar ? 'rgba(30,34,50,0.5)' : 'rgba(22,26,40,0.58)';
@@ -381,7 +383,7 @@ function renderPlayer(ctx: CanvasRenderingContext2D, player: Player, time: numbe
     ctx.save();
     ctx.rotate(time * 6);
     ctx.strokeStyle = b.type === 'speed' ? '#00eeff' : '#ffd700';
-    ctx.lineWidth = 2.5; ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
   }
@@ -551,14 +553,16 @@ function renderEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number):
     const sp = 1 - enemy.spawnTimer / 0.7;
     ctx.save(); ctx.translate(cx, cy); ctx.rotate(time * 6);
     ctx.strokeStyle = `rgba(255,80,60,${0.6 * (1 - sp)})`;
-    ctx.lineWidth = 2.5; ctx.setLineDash([8, 8]);
+    ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(0, 0, baseSize * (1.5 - sp * 0.5), 0, Math.PI * 2); ctx.stroke();
-    ctx.setLineDash([]); ctx.restore();
+    ctx.restore();
   }
 
   let scale = 1; let alpha = 1;
   if (enemy.spawnTimer > 0) { const sp = Math.max(0, 1 - enemy.spawnTimer / 0.7); scale = sp; alpha = sp; }
   if (enemy.dyingTimer > 0) { const dp = enemy.dyingTimer / 0.4; scale = dp; alpha = dp; }
+
+  if (alpha < 0.05) return;
 
   const s = baseSize * scale;
   const half = s / 2;
@@ -757,7 +761,11 @@ function renderKey(ctx: CanvasRenderingContext2D, key: GoldKey, time: number): v
 }
 
 function renderParticles(ctx: CanvasRenderingContext2D, particles: Particle[]): void {
-  for (const p of particles) {
+  const count = particles.length;
+  const useGlow = count < 200;
+
+  for (let i = 0; i < count; i++) {
+    const p = particles[i];
     const a = p.life / p.maxLife;
     ctx.globalAlpha = a; ctx.fillStyle = p.color;
 
@@ -766,10 +774,11 @@ function renderParticles(ctx: CanvasRenderingContext2D, particles: Particle[]): 
       ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); ctx.restore();
     } else if (p.shape === 'spark') {
       ctx.strokeStyle = p.color; ctx.lineWidth = p.size * 0.7; ctx.lineCap = 'round';
-      if (p.glow) { ctx.shadowColor = p.color; ctx.shadowBlur = 8; }
+      if (p.glow && useGlow) { ctx.shadowColor = p.color; ctx.shadowBlur = 8; }
       const len = Math.hypot(p.vx, p.vy) * 0.035, ang = Math.atan2(p.vy, p.vx);
       ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - Math.cos(ang) * len, p.y - Math.sin(ang) * len);
-      ctx.stroke(); ctx.shadowBlur = 0;
+      ctx.stroke();
+      if (useGlow) ctx.shadowBlur = 0;
     } else if (p.shape === 'slash') {
       ctx.strokeStyle = p.color; ctx.lineWidth = p.size * 1.2; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 4, (p.rotation || 0) - 0.5, (p.rotation || 0) + 0.5); ctx.stroke();
@@ -778,8 +787,9 @@ function renderParticles(ctx: CanvasRenderingContext2D, particles: Particle[]): 
     } else if (p.shape === 'rune') {
       ctx.font = `${Math.round(p.size * 3.5)}px Orbitron, monospace`; ctx.fillText('⚡', p.x, p.y);
     } else {
-      if (p.glow) { ctx.shadowColor = p.color; ctx.shadowBlur = 8; }
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (0.4 + a * 0.6), 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      if (p.glow && useGlow) { ctx.shadowColor = p.color; ctx.shadowBlur = 8; }
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (0.4 + a * 0.6), 0, Math.PI * 2); ctx.fill();
+      if (useGlow) ctx.shadowBlur = 0;
     }
   }
   ctx.globalAlpha = 1;
@@ -787,12 +797,16 @@ function renderParticles(ctx: CanvasRenderingContext2D, particles: Particle[]): 
 
 function renderFloatingTexts(ctx: CanvasRenderingContext2D, texts: FloatingText[]): void {
   ctx.textAlign = 'center';
-  for (const ft of texts) {
+  const count = texts.length;
+  for (let i = 0; i < count; i++) {
+    const ft = texts[i];
     const a = Math.min(1, ft.life / ft.maxLife);
     ctx.globalAlpha = a; ctx.font = `bold ${ft.size}px Orbitron, monospace`;
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillText(ft.text, ft.x + 1.5, ft.y + 1.5);
-    ctx.fillStyle = ft.color; ctx.shadowColor = ft.color; ctx.shadowBlur = 10;
-    ctx.fillText(ft.text, ft.x, ft.y); ctx.shadowBlur = 0;
+    ctx.fillStyle = ft.color;
+    if (count < 15) { ctx.shadowColor = ft.color; ctx.shadowBlur = 10; }
+    ctx.fillText(ft.text, ft.x, ft.y);
+    if (count < 15) ctx.shadowBlur = 0;
   }
   ctx.globalAlpha = 1;
 }

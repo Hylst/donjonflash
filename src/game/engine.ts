@@ -493,8 +493,11 @@ function spawnLoot(state: GameState, x: number, y: number): void {
 // FX SPAWNERS
 // ============================================================================
 
+const MAX_PARTICLES = 500;
+
 function burst(particles: Particle[], x: number, y: number, count: number, color: string, speed = 160, size = 4.5, glow = true, shape: Particle['shape'] = 'circle'): void {
-  for (let i = 0; i < count; i++) {
+  const remaining = Math.min(count, Math.max(0, MAX_PARTICLES - particles.length));
+  for (let i = 0; i < remaining; i++) {
     const a = Math.random() * Math.PI * 2;
     const spd = speed * (0.3 + Math.random() * 0.9);
     const lf = 0.4 + Math.random() * 0.6;
@@ -511,7 +514,8 @@ function burst(particles: Particle[], x: number, y: number, count: number, color
 }
 
 function shatter(particles: Particle[], x: number, y: number, color: string, baseSize: number): void {
-  for (let i = 0; i < 16; i++) {
+  const remaining = Math.min(16, Math.max(0, MAX_PARTICLES - particles.length));
+  for (let i = 0; i < remaining; i++) {
     const a = Math.random() * Math.PI * 2;
     const spd = 140 + Math.random() * 240;
     const lf = 0.5 + Math.random() * 0.5;
@@ -799,13 +803,13 @@ export function update(state: GameState, dt: number, keys: Keys): void {
       shake(state, 16, 0.3);
       state.novaFlash = 1;
       floatText(state.floatingTexts, player.x, player.y - 30, 'NOVA DE GEL ❄️!', '#00eeff', 22);
-      burst(state.particles, player.x, player.y, 60, '#00eeff', 450, 6, true, 'star');
+      burst(state.particles, player.x, player.y, 30, '#00eeff', 450, 6, true, 'star');
 
       for (const enemy of state.enemies) {
         if (enemy.health <= 0 || enemy.dyingTimer > 0) continue;
         enemy.health -= (1 + player.bonusDamage);
         enemy.frozenTimer = 4.5;
-        burst(state.particles, enemy.x, enemy.y, 15, '#00eeff', 120, 4, true, 'shard');
+        burst(state.particles, enemy.x, enemy.y, 8, '#00eeff', 120, 4, true, 'shard');
         if (enemy.health <= 0) {
           enemy.dyingTimer = 0.4; enemy.health = 0;
           addXp(state, enemy.type === 'tank' ? 35 : enemy.type === 'shooter' ? 25 : enemy.type === 'fast' ? 20 : 15, enemy.x, enemy.y);
@@ -1178,8 +1182,10 @@ export function update(state: GameState, dt: number, keys: Keys): void {
 }
 
 function updateParticles(state: GameState, dt: number): void {
-  for (let i = state.particles.length - 1; i >= 0; i--) {
-    const p = state.particles[i];
+  let writeIdx = 0;
+  const parts = state.particles;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     p.vx *= 0.94;
@@ -1187,13 +1193,24 @@ function updateParticles(state: GameState, dt: number): void {
     if (p.gravity) p.vy += p.gravity * dt;
     if (p.vr) p.rotation = (p.rotation || 0) + p.vr * dt;
     p.life -= dt;
-    if (p.life <= 0) state.particles.splice(i, 1);
+    if (p.life > 0) {
+      if (writeIdx !== i) parts[writeIdx] = p;
+      writeIdx++;
+    }
   }
-  for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
-    const ft = state.floatingTexts[i];
+  parts.length = writeIdx;
+
+  let w2 = 0;
+  const fts = state.floatingTexts;
+  for (let i = 0; i < fts.length; i++) {
+    const ft = fts[i];
     ft.y += ft.vy * dt;
     ft.vy *= 0.96;
     ft.life -= dt;
-    if (ft.life <= 0) state.floatingTexts.splice(i, 1);
+    if (ft.life > 0) {
+      if (w2 !== i) fts[w2] = ft;
+      w2++;
+    }
   }
+  fts.length = w2;
 }
