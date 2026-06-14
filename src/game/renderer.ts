@@ -557,7 +557,7 @@ function renderEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number):
   }
 
   let scale = 1; let alpha = 1;
-  if (enemy.spawnTimer > 0) { const sp = 1 - enemy.spawnTimer / 0.7; scale = sp; alpha = sp; }
+  if (enemy.spawnTimer > 0) { const sp = Math.max(0, 1 - enemy.spawnTimer / 0.7); scale = sp; alpha = sp; }
   if (enemy.dyingTimer > 0) { const dp = enemy.dyingTimer / 0.4; scale = dp; alpha = dp; }
 
   const s = baseSize * scale;
