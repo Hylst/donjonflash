@@ -816,7 +816,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
           type: 'arrow',
           friendly: true,
           damage: arrowDmg,
-          piercing: player.rangerPierceBonus ? true : true,
+          piercing: player.rangerPierceBonus,
           radius: 8,
           life: 1.4,
           angle: ang,
@@ -1061,7 +1061,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
     if (!proj.friendly && !remove && player.invincibleTimer <= 0) {
       if (circleCircle(proj.x, proj.y, proj.radius, player.x, player.y, player.radius)) {
         remove = true;
-        const rawDmg = 1;
+        const rawDmg = 1 + Math.floor(state.roomLevel / 4);
         const mitigated = Math.max(0, rawDmg - player.armor);
         if (mitigated <= 0) {
           floatText(state.floatingTexts, player.x, player.y - 26, 'BLOQUÉ! 🛡️', '#66ccff', 16);
@@ -1240,7 +1240,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
   for (const enemy of state.enemies) {
     if (enemy.health <= 0 || enemy.spawnTimer > 0 || enemy.dyingTimer > 0 || (enemy.frozenTimer && enemy.frozenTimer > 0)) continue;
     if (player.invincibleTimer <= 0 && circleCircle(player.x, player.y, player.radius, enemy.x, enemy.y, enemy.size / 2)) {
-      const rawDmg = 1;
+      const rawDmg = 1 + Math.floor(state.roomLevel / 4);
       const mitigated = Math.max(0, rawDmg - player.armor);
       if (mitigated <= 0) {
         floatText(state.floatingTexts, player.x, player.y - 26, 'BLOQUÉ! 🛡️', '#66ccff', 16);
