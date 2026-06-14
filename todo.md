@@ -10,11 +10,11 @@
 - [x] Creer features.md
 - [x] Creer todo.md
 - [x] Creer changelog.md
-- [ ] Generer l'image OG
-- [ ] Build le jeu (npm run build)
-- [ ] Copier dist/ → donjonflash/ dans le monorepo
-- [ ] Copier og-image.png dans donjonflash/
-- [ ] Commit et push
+- [x] Build le jeu (npm run build, single-file ~2.1 MB)
+- [x] Copier dist/ → donjonflash/ dans le monorepo
+- [x] Copier og-image.png dans donjonflash/
+- [x] Commit et push
+- [ ] Generer l'image OG (manuelle)
 - [ ] Deployer via Coolify
 
 ## Ameliorations futures

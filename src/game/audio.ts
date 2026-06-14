@@ -185,122 +185,126 @@ export function startMusic(): void {
   if (ctx.state === 'suspended') void ctx.resume();
 
   let step = 0;
-  const tempoMs = 160;
+  const tempoSec = 0.16;
+  const scheduleAhead = 0.2;
+  let nextNoteTime = ctx.currentTime + 0.05;
 
-  const loop = () => {
+  const scheduleLoop = () => {
     if (!isMusicPlaying || !ctx || !musicGain || isMuted) {
-      if (isMusicPlaying) musicTimer = window.setTimeout(loop, tempoMs);
+      if (isMusicPlaying) musicTimer = window.setTimeout(scheduleLoop, 100);
       return;
     }
-    const now = ctx.currentTime;
-    const barPos = step % 16;
 
-    // 1) Kick drum (beats 0, 4, 8, 12)
-    if (barPos % 4 === 0) {
-      const kickOsc = ctx.createOscillator();
-      const kickGain = ctx.createGain();
-      kickOsc.type = 'sine';
-      kickOsc.frequency.setValueAtTime(150, now);
-      kickOsc.frequency.exponentialRampToValueAtTime(30, now + 0.08);
-      kickGain.gain.setValueAtTime(0.6, now);
-      kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-      kickOsc.connect(kickGain); kickGain.connect(musicGain);
-      kickOsc.start(now); kickOsc.stop(now + 0.15);
-    }
+    while (nextNoteTime < ctx.currentTime + scheduleAhead) {
+      const now = nextNoteTime;
+      const barPos = step % 16;
 
-    // 2) Hi-hat (every 2 steps, tighter on offbeats)
-    if (barPos % 2 === 0) {
-      const hhVol = barPos % 4 === 2 ? 0.18 : 0.12;
-      playNoiseInMusic(0.04, hhVol, 7000);
-    }
-
-    // 3) Snare (beats 4, 12)
-    if (barPos === 4 || barPos === 12) {
-      playNoiseInMusic(0.1, 0.3, 3500);
-      const snOsc = ctx.createOscillator();
-      const snGain = ctx.createGain();
-      snOsc.type = 'triangle';
-      snOsc.frequency.setValueAtTime(220, now);
-      snGain.gain.setValueAtTime(0.25, now);
-      snGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-      snOsc.connect(snGain); snGain.connect(musicGain);
-      snOsc.start(now); snOsc.stop(now + 0.08);
-    }
-
-    // 4) Bass with filter sweep (every step, pattern varies)
-    const bassPattern = [0, 0, 2, 0, 3, 3, 2, 0, 0, 0, 2, 3, 0, 1, 2, 0];
-    const bassNote = bassScale[bassPattern[barPos]];
-    const bassOsc = ctx.createOscillator();
-    const bassFilter = ctx.createBiquadFilter();
-    const bassEnv = ctx.createGain();
-    bassOsc.type = 'sawtooth';
-    bassOsc.frequency.setValueAtTime(bassNote, now);
-    bassFilter.type = 'lowpass';
-    bassFilter.frequency.setValueAtTime(800, now);
-    bassFilter.frequency.exponentialRampToValueAtTime(200, now + 0.12);
-    bassEnv.gain.setValueAtTime(0.35, now);
-    bassEnv.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
-    bassOsc.connect(bassFilter); bassFilter.connect(bassEnv); bassEnv.connect(musicGain);
-    bassOsc.start(now); bassOsc.stop(now + 0.14);
-
-    // 5) Harmony chord pad (every 8 steps, with delay tail)
-    if (barPos % 8 === 0) {
-      const rootIdx = progRoots[(step >> 4) % progRoots.length];
-      const root = scale[rootIdx];
-      const third = scale[Math.min(rootIdx + 2, 7)];
-      const fifth = root * 1.5;
-      for (const f of [root, third, fifth]) {
-        const cOsc = ctx!.createOscillator();
-        const cGain = ctx!.createGain();
-        cOsc.type = 'triangle';
-        cOsc.frequency.setValueAtTime(f, now);
-        cGain.gain.setValueAtTime(0.1, now);
-        cGain.gain.exponentialRampToValueAtTime(0.005, now + 0.7);
-        cOsc.connect(cGain); cGain.connect(musicGain!);
-        cOsc.start(now); cOsc.stop(now + 0.7);
+      // 1) Kick
+      if (barPos % 4 === 0) {
+        const kickOsc = ctx.createOscillator();
+        const kickGain = ctx.createGain();
+        kickOsc.type = 'sine';
+        kickOsc.frequency.setValueAtTime(150, now);
+        kickOsc.frequency.exponentialRampToValueAtTime(30, now + 0.08);
+        kickGain.gain.setValueAtTime(0.6, now);
+        kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        kickOsc.connect(kickGain); kickGain.connect(musicGain);
+        kickOsc.start(now); kickOsc.stop(now + 0.15);
       }
+
+      // 2) Hi-hat
+      if (barPos % 2 === 0) {
+        scheduleNoise(now, barPos % 4 === 2 ? 0.18 : 0.12, 0.04, 7000, musicGain);
+      }
+
+      // 3) Snare
+      if (barPos === 4 || barPos === 12) {
+        scheduleNoise(now, 0.3, 0.1, 3500, musicGain);
+        const snOsc = ctx.createOscillator();
+        const snGain = ctx.createGain();
+        snOsc.type = 'triangle';
+        snOsc.frequency.setValueAtTime(220, now);
+        snGain.gain.setValueAtTime(0.25, now);
+        snGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        snOsc.connect(snGain); snGain.connect(musicGain);
+        snOsc.start(now); snOsc.stop(now + 0.08);
+      }
+
+      // 4) Bass with filter sweep
+      const bassPattern = [0, 0, 2, 0, 3, 3, 2, 0, 0, 0, 2, 3, 0, 1, 2, 0];
+      const bassNote = bassScale[bassPattern[barPos]];
+      const bassOsc = ctx.createOscillator();
+      const bassFilter = ctx.createBiquadFilter();
+      const bassEnv = ctx.createGain();
+      bassOsc.type = 'sawtooth';
+      bassOsc.frequency.setValueAtTime(bassNote, now);
+      bassFilter.type = 'lowpass';
+      bassFilter.frequency.setValueAtTime(800, now);
+      bassFilter.frequency.exponentialRampToValueAtTime(200, now + 0.12);
+      bassEnv.gain.setValueAtTime(0.35, now);
+      bassEnv.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+      bassOsc.connect(bassFilter); bassFilter.connect(bassEnv); bassEnv.connect(musicGain);
+      bassOsc.start(now); bassOsc.stop(now + 0.14);
+
+      // 5) Harmony chord pad
+      if (barPos % 8 === 0) {
+        const rootIdx = progRoots[(step >> 4) % progRoots.length];
+        const root = scale[rootIdx];
+        const third = scale[Math.min(rootIdx + 2, 7)];
+        const fifth = root * 1.5;
+        for (const f of [root, third, fifth]) {
+          const cOsc = ctx.createOscillator();
+          const cGain = ctx.createGain();
+          cOsc.type = 'triangle';
+          cOsc.frequency.setValueAtTime(f, now);
+          cGain.gain.setValueAtTime(0.1, now);
+          cGain.gain.exponentialRampToValueAtTime(0.005, now + 0.7);
+          cOsc.connect(cGain); cGain.connect(musicGain);
+          cOsc.start(now); cOsc.stop(now + 0.7);
+        }
+      }
+
+      // 6) Arp lead with echo
+      const arpPattern = [0, 2, 4, 7, 4, 2, 5, 3, 0, 3, 5, 7, 5, 3, 2, 0];
+      const arpIdx = arpPattern[barPos];
+      const rootIdx = progRoots[(step >> 4) % progRoots.length];
+      const leadNote = scale[Math.min((rootIdx + arpIdx) % 8, 7)];
+      scheduleArp(leadNote, now, tempoSec * 0.9, 'square', 0.18, musicGain);
+      if (barPos % 2 === 0) {
+        scheduleArp(leadNote * 1.002, now + tempoSec / 2, tempoSec * 0.5, 'square', 0.06, musicGain);
+      }
+
+      // 7) Second harmony arp
+      if (barPos % 2 === 1) {
+        const harmNote = scale[Math.min((rootIdx + arpIdx + 3) % 8, 7)];
+        scheduleArp(harmNote, now, tempoSec * 0.4, 'triangle', 0.07, musicGain);
+      }
+
+      nextNoteTime += tempoSec;
+      step++;
     }
 
-    // 6) Arpeggio lead with echo (delay effect)
-    const arpPattern = [0, 2, 4, 7, 4, 2, 5, 3, 0, 3, 5, 7, 5, 3, 2, 0];
-    const arpIdx = arpPattern[barPos];
-    const rootIdx = progRoots[(step >> 4) % progRoots.length];
-    const leadNote = scale[Math.min((rootIdx + arpIdx) % 8, 7)];
-    playArpNote(leadNote, 0.16, 'square', 0.18, now);
-    // Echo/delay at half volume, offset by 2 steps
-    if (barPos % 2 === 0) {
-      playArpNote(leadNote * 1.002, 0.1, 'square', 0.06, now + tempoMs / 2000);
-    }
-
-    // 7) Second harmony arp (softer, offset)
-    if (barPos % 2 === 1) {
-      const harmNote = scale[Math.min((rootIdx + arpIdx + 3) % 8, 7)];
-      playArpNote(harmNote, 0.08, 'triangle', 0.07, now);
-    }
-
-    step++;
-    musicTimer = window.setTimeout(loop, tempoMs);
+    musicTimer = window.setTimeout(scheduleLoop, 50);
   };
 
-  musicTimer = window.setTimeout(loop, tempoMs);
+  musicTimer = window.setTimeout(scheduleLoop, 50);
 }
 
-function playArpNote(freq: number, dur: number, type: OscillatorType, vol: number, when: number): void {
-  if (!ctx || !musicGain) return;
+function scheduleArp(freq: number, when: number, dur: number, type: OscillatorType, vol: number, dest: GainNode): void {
+  if (!ctx) return;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = type;
   osc.frequency.setValueAtTime(freq, when);
   gain.gain.setValueAtTime(vol, when);
   gain.gain.exponentialRampToValueAtTime(0.001, when + dur);
-  osc.connect(gain); gain.connect(musicGain);
+  osc.connect(gain); gain.connect(dest);
   osc.start(when); osc.stop(when + dur);
 }
 
-function playNoiseInMusic(dur: number, vol: number, filterFreq: number): void {
-  if (!ctx || !musicGain) return;
-  const now = ctx.currentTime;
-  const bufferSize = ctx.sampleRate * dur;
+function scheduleNoise(when: number, vol: number, dur: number, filterFreq: number, dest: GainNode): void {
+  if (!ctx) return;
+  const bufferSize = Math.ceil(ctx.sampleRate * dur);
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
@@ -308,12 +312,12 @@ function playNoiseInMusic(dur: number, vol: number, filterFreq: number): void {
   noise.buffer = buffer;
   const filter = ctx.createBiquadFilter();
   filter.type = 'highpass';
-  filter.frequency.setValueAtTime(filterFreq, now);
+  filter.frequency.setValueAtTime(filterFreq, when);
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(vol, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-  noise.connect(filter); filter.connect(gain); gain.connect(musicGain);
-  noise.start(now); noise.stop(now + dur);
+  gain.gain.setValueAtTime(vol, when);
+  gain.gain.exponentialRampToValueAtTime(0.001, when + dur);
+  noise.connect(filter); filter.connect(gain); gain.connect(dest);
+  noise.start(when); noise.stop(when + dur);
 }
 
 export function stopMusic(): void {
