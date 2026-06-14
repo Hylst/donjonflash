@@ -690,11 +690,14 @@ export function update(state: GameState, dt: number, keys: Keys): void {
       shake(state, 4, 0.08);
       floatText(state.floatingTexts, player.x, player.y - 20, 'TIR 🏹', '#ffd866', 14);
     } else if (player.heroClass === 'rogue') {
-      // 🗡️ Triple Fan of Daggers
       sfx.daggersFan();
       shake(state, 4, 0.08);
-      floatText(state.floatingTexts, player.x, player.y - 20, 'DAGUES 🗡️', '#7dffc4', 14);
-      for (const angOffset of [-0.25, 0, 0.25]) {
+      const lvl = player.heroLevel;
+      const nbDaggers = lvl >= 5 ? 4 : lvl >= 3 ? 3 : 2;
+      const spread = nbDaggers === 4 ? 0.35 : nbDaggers === 3 ? 0.28 : 0.2;
+      floatText(state.floatingTexts, player.x, player.y - 20, `DAGUES 🗡️ ×${nbDaggers}`, '#7dffc4', 14);
+      for (let i = 0; i < nbDaggers; i++) {
+        const angOffset = nbDaggers === 1 ? 0 : -spread + (spread * 2) * (i / (nbDaggers - 1));
         const shootAng = player.facing + angOffset;
         state.projectiles.push({
           id: nextProjId++,
@@ -798,18 +801,19 @@ export function update(state: GameState, dt: number, keys: Keys): void {
         });
       }
     } else if (player.activeScroll.type === 'scroll_nova') {
-      // ❄️ Glacial Ice Nova Freezing total screen!
       sfx.iceNova();
       shake(state, 16, 0.3);
       state.novaFlash = 1;
       floatText(state.floatingTexts, player.x, player.y - 30, 'NOVA DE GEL ❄️!', '#00eeff', 22);
       burst(state.particles, player.x, player.y, 30, '#00eeff', 450, 6, true, 'star');
-
+      const NOVA_RADIUS = 250;
       for (const enemy of state.enemies) {
         if (enemy.health <= 0 || enemy.dyingTimer > 0) continue;
-        enemy.health -= (1 + player.bonusDamage);
-        enemy.frozenTimer = 4.5;
-        burst(state.particles, enemy.x, enemy.y, 8, '#00eeff', 120, 4, true, 'shard');
+        const dx = enemy.x - player.x, dy = enemy.y - player.y;
+        if (Math.sqrt(dx * dx + dy * dy) > NOVA_RADIUS) continue;
+        enemy.health -= (2 + player.bonusDamage);
+        enemy.frozenTimer = 2.5;
+        burst(state.particles, enemy.x, enemy.y, 6, '#00eeff', 100, 3.5, true, 'shard');
         if (enemy.health <= 0) {
           enemy.dyingTimer = 0.4; enemy.health = 0;
           addXp(state, enemy.type === 'tank' ? 35 : enemy.type === 'shooter' ? 25 : enemy.type === 'fast' ? 20 : 15, enemy.x, enemy.y);
@@ -1040,7 +1044,8 @@ export function update(state: GameState, dt: number, keys: Keys): void {
       enemy.x += Math.cos(enemy.angle) * 350 * dt;
       enemy.y += Math.sin(enemy.angle) * 350 * dt;
     } else if (dist > 0) {
-      const spd = enemy.speed * dt;
+      const slowMul = (enemy.frozenTimer && enemy.frozenTimer > 0) ? 0.35 : 1;
+      const spd = enemy.speed * dt * slowMul;
       enemy.x += (edx / dist) * spd;
       enemy.y += (edy / dist) * spd;
       enemy.angle = Math.atan2(edy, edx);
