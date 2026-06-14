@@ -762,34 +762,48 @@ function renderKey(ctx: CanvasRenderingContext2D, key: GoldKey, time: number): v
 
 function renderParticles(ctx: CanvasRenderingContext2D, particles: Particle[]): void {
   const count = particles.length;
-  const useGlow = count < 200;
+  const fast = count > 100;
 
   for (let i = 0; i < count; i++) {
     const p = particles[i];
     const a = p.life / p.maxLife;
-    ctx.globalAlpha = a; ctx.fillStyle = p.color;
+    ctx.globalAlpha = a;
 
     if (p.shape === 'shard') {
+      ctx.fillStyle = p.color;
       ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rotation || 0);
       ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); ctx.restore();
     } else if (p.shape === 'spark') {
       ctx.strokeStyle = p.color; ctx.lineWidth = p.size * 0.7; ctx.lineCap = 'round';
-      if (p.glow && useGlow) { ctx.shadowColor = p.color; ctx.shadowBlur = 8; }
+      if (p.glow && !fast) {
+        ctx.globalAlpha = a * 0.3;
+        ctx.fillRect(p.x - p.size * 2, p.y - p.size * 2, p.size * 4, p.size * 4);
+        ctx.globalAlpha = a;
+      }
       const len = Math.hypot(p.vx, p.vy) * 0.035, ang = Math.atan2(p.vy, p.vx);
       ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - Math.cos(ang) * len, p.y - Math.sin(ang) * len);
       ctx.stroke();
-      if (useGlow) ctx.shadowBlur = 0;
     } else if (p.shape === 'slash') {
       ctx.strokeStyle = p.color; ctx.lineWidth = p.size * 1.2; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 4, (p.rotation || 0) - 0.5, (p.rotation || 0) + 0.5); ctx.stroke();
     } else if (p.shape === 'star') {
-      ctx.font = `${Math.round(p.size * 4)}px Orbitron, monospace`; ctx.fillText('✨', p.x, p.y);
+      ctx.fillStyle = p.color;
+      const sz = Math.round(p.size * 4);
+      ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
     } else if (p.shape === 'rune') {
-      ctx.font = `${Math.round(p.size * 3.5)}px Orbitron, monospace`; ctx.fillText('⚡', p.x, p.y);
+      ctx.fillStyle = p.color;
+      const sz = Math.round(p.size * 3);
+      ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
     } else {
-      if (p.glow && useGlow) { ctx.shadowColor = p.color; ctx.shadowBlur = 8; }
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (0.4 + a * 0.6), 0, Math.PI * 2); ctx.fill();
-      if (useGlow) ctx.shadowBlur = 0;
+      ctx.fillStyle = p.color;
+      if (p.glow && !fast) {
+        ctx.globalAlpha = a * 0.25;
+        const gs = p.size * 2.5;
+        ctx.fillRect(p.x - gs, p.y - gs, gs * 2, gs * 2);
+        ctx.globalAlpha = a;
+      }
+      const r = p.size * (0.4 + a * 0.6);
+      ctx.fillRect(p.x - r, p.y - r, r * 2, r * 2);
     }
   }
   ctx.globalAlpha = 1;

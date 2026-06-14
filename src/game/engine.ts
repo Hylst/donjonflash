@@ -834,7 +834,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
     proj.life -= dt;
 
     // Trail FX
-    if (Math.random() < 0.6) {
+    if (Math.random() < 0.6 && state.particles.length < MAX_PARTICLES) {
       const pcol = proj.type === 'fireball' ? '#ff5500' : proj.type === 'arrow' ? '#ffd866' : proj.type === 'enemy_bolt' ? '#cc66ff' : '#ffffff';
       state.particles.push({
         x: proj.x, y: proj.y,
@@ -994,7 +994,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
     // Glacial frozen magic total freeze
     if (enemy.frozenTimer && enemy.frozenTimer > 0) {
       enemy.frozenTimer -= dt;
-      if (Math.random() < 0.2) {
+      if (Math.random() < 0.2 && state.particles.length < MAX_PARTICLES) {
         state.particles.push({
           x: enemy.x + (Math.random() - 0.5) * enemy.size,
           y: enemy.y + (Math.random() - 0.5) * enemy.size,
