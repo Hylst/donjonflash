@@ -341,6 +341,7 @@ function findSafeSpawn(radius: number, walls: Wall[], targetX?: number, targetY?
 
 function generateEnemies(level: number, walls: Wall[], difficulty: Difficulty): Enemy[] {
   const hpMul = difficulty === 'hard' ? 2.0 : difficulty === 'normal' ? 1.5 : 1.0;
+  const roomScale = 1 + level * 0.12;
   const isBoss = level > 1 && level % 5 === 0;
   const baseCount = level === 1 ? 4 : Math.min(4 + Math.floor(level * 1.2), 16);
   const count = isBoss ? baseCount + 2 : baseCount;
@@ -357,25 +358,29 @@ function generateEnemies(level: number, walls: Wall[], difficulty: Difficulty): 
       const roll = Math.random();
       if (level >= 6 && roll < 0.12 + level * 0.015) {
         type = 'berserker';
-        hp = 2;
+        hp = Math.round((3 + level * 0.8) * roomScale);
         size = Math.round(eBaseSize * 0.9);
         baseSpd = 120 + level * 8 + Math.random() * 20;
       } else if (level >= 4 && roll < 0.16 + level * 0.02) {
         type = 'tank';
-        hp = 2 + Math.floor(level / 3);
+        hp = Math.round((8 + level * 1.5) * roomScale);
         size = Math.round(eBaseSize * 1.6);
         baseSpd = 42 + level * 3;
       } else if (level >= 5 && roll < 0.35) {
         type = 'shooter';
-        hp = 2;
+        hp = Math.round((3 + level * 0.5) * roomScale);
         size = Math.round(eBaseSize * 0.95);
         baseSpd = 52 + level * 4;
       } else if (level >= 2 && roll < 0.55) {
         type = 'fast';
-        hp = 1;
+        hp = Math.round((2 + level * 0.3) * roomScale);
         size = Math.round(eBaseSize * 0.75);
         baseSpd = 100 + level * 10 + Math.random() * 30;
+      } else {
+        hp = Math.round((4 + level * 0.6) * roomScale);
       }
+    } else {
+      hp = Math.round((4 + level * 0.6) * roomScale);
     }
 
     hp = Math.max(1, Math.round(hp * hpMul));
@@ -799,7 +804,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
     } else if (player.heroClass === 'ranger') {
       sfx.bowRelease();
       burst(state.particles, player.x + Math.cos(player.facing) * 16, player.y + Math.sin(player.facing) * 16, 6, '#ffd866', 100, 3, true, 'spark');
-      const arrowDmg = 1 + player.bonusDamage;
+      const arrowDmg = 1 + player.bonusDamage * 0.5;
       const arrows = player.rangerMultiShot ? [player.facing - 0.12, player.facing, player.facing + 0.12] : [player.facing];
       for (const ang of arrows) {
         state.projectiles.push({
@@ -830,7 +835,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
         const angOffset = nbDaggers === 1 ? 0 : -spread + (spread * 2) * (i / (nbDaggers - 1));
         const shootAng = player.facing + angOffset;
         const isCrit = Math.random() < player.critChance;
-        const daggerDmg = (2 + player.bonusDamage) * (isCrit ? player.rogueCritMul : 1);
+        const daggerDmg = (1 + lvl * 0.4) * (isCrit ? player.rogueCritMul : 1);
         state.projectiles.push({
           id: nextProjId++,
           x: player.x + Math.cos(player.facing) * 14,
@@ -862,7 +867,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
         if (enemy.health <= 0 || enemy.spawnTimer > 0 || enemy.dyingTimer > 0 || enemy.hitTimer > 0.05) continue;
         if (pointInArc(enemy.x, enemy.y, player.x, player.y, player.attackAngle, ATTACK_ARC, 82 + enemy.size * 0.38)) {
           const isCrit = Math.random() < player.critChance;
-          const dmg = (1 + player.bonusDamage) * (isCrit ? (player.heroClass === 'rogue' ? player.rogueCritMul : 2) : 1);
+          const dmg = (1 + player.heroLevel * 0.4) * (isCrit ? (player.heroClass === 'rogue' ? player.rogueCritMul : 2) : 1);
           enemy.health -= dmg;
           enemy.hitTimer = 0.22;
           hitRegistered = true;
@@ -953,7 +958,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
         if (enemy.health <= 0 || enemy.dyingTimer > 0) continue;
         const dx = enemy.x - player.x, dy = enemy.y - player.y;
         if (Math.sqrt(dx * dx + dy * dy) > NOVA_RADIUS) continue;
-        enemy.health -= (2 + player.bonusDamage);
+        enemy.health -= (2 + player.bonusDamage * 0.5);
         enemy.frozenTimer = 2.5;
         burst(state.particles, enemy.x, enemy.y, 6, '#00eeff', 100, 3.5, true, 'shard');
         if (enemy.health <= 0) {
