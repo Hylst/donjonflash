@@ -16,6 +16,7 @@ interface Hud {
   xpNext: number;
   roomLevel: number;
   roomName: string;
+  roomModifier: GameState['roomModifier'];
   score: number;
   combo: number;
   comboPct: number;
@@ -42,7 +43,7 @@ export default function App() {
   const [showTouch, setShowTouch] = useState(false);
   const [onboardingSlide, setOnboardingSlide] = useState<number>(0);
   const [hud, setHud] = useState<Hud>({
-    status: 'menu', selectedClass: 'warrior', heroLevel: 1, xp: 0, xpNext: 100, roomLevel: 0, roomName: '', score: 0, combo: 0, comboPct: 0,
+    status: 'menu', selectedClass: 'warrior', heroLevel: 1, xp: 0, xpNext: 100, roomLevel: 0, roomName: '', roomModifier: 'none', score: 0, combo: 0, comboPct: 0,
     health: 7, maxHealth: 7, enemyCount: 0, chestCount: 0, goldKey: false, doorOpen: false, activeScroll: null, hasteActive: false, invincibleActive: false, isMuted: false,
   });
 
@@ -74,6 +75,7 @@ export default function App() {
         xpNext: state.player.xpNext,
         roomLevel: state.roomLevel,
         roomName: state.roomName,
+        roomModifier: state.roomModifier,
         score: state.score,
         combo: state.combo,
         comboPct: state.combo > 0 ? Math.max(0, state.comboTimer / 2.4) : 0,
@@ -241,20 +243,20 @@ export default function App() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               <HeroCard
                 active={hud.selectedClass === 'warrior'} onClick={selectHeroClass('warrior')}
-                icon="🛡️" name="Guerrier Sanctifié" hp="7 PV" spd="Vitesse Modérée"
-                wpn="Épée Lourde Rotative (Balayage de zone)" spell="Parchemins de Boules de Feu 🔥"
+                icon="🛡️" name="Guerrier Sanctifié" hp="7 PV (+2/NV)" spd="Modérée"
+                wpn="Épée Lourde (Balayage + Armure + Crit)" spell="Boules de Feu 🔥 ×2"
                 accent="from-rose-500/20 to-red-900/40 border-rose-500/50 shadow-rose-500/20"
               />
               <HeroCard
                 active={hud.selectedClass === 'ranger'} onClick={selectHeroClass('ranger')}
-                icon="🏹" name="Ranger de l\'Ombre" hp="5 PV" spd="Déplacement Rapide"
-                wpn="Arc Long (Flèches d\'Or perforantes)" spell="Parchemins de Nova de Gel ❄️"
+                icon="🏹" name="Ranger de l'Ombre" hp="5 PV (+1/NV)" spd="Rapide"
+                wpn="Arc (Double Tir NV3, Perçant NV6)" spell="Nova de Gel ❄️"
                 accent="from-emerald-500/20 to-teal-900/40 border-emerald-500/50 shadow-emerald-500/20"
               />
               <HeroCard
                 active={hud.selectedClass === 'rogue'} onClick={selectHeroClass('rogue')}
-                icon="🗡️" name="Filou Vif-Argent" hp="4 PV" spd="Vitesse Maximale"
-                wpn="Éventail de Triple Dagues Vives" spell="Parchemins de Boules de Feu 🔥"
+                icon="🗡️" name="Filou Vif-Argent" hp="4 PV (+1/NV)" spd="Maximale"
+                wpn="Dagues (×1 NV1, ×2 NV5, ×3 NV10)" spell="Boules de Feu 🔥"
                 accent="from-cyan-500/20 to-blue-900/40 border-cyan-500/50 shadow-cyan-500/20"
               />
             </div>
@@ -378,6 +380,9 @@ export default function App() {
                 {(playing || paused) && (
                   <span className="text-xs sm:text-sm font-bold text-emerald-400 truncate">
                     Salle {hud.roomLevel} <span className="text-emerald-500 font-normal">({hud.roomName})</span>
+                    {hud.roomModifier === 'trapped' && <span className="text-orange-400 ml-1">🔥</span>}
+                    {hud.roomModifier === 'treasure' && <span className="text-amber-300 ml-1">💎</span>}
+                    {hud.roomModifier === 'reinforced' && <span className="text-red-400 ml-1">🛡️</span>}
                   </span>
                 )}
               </div>

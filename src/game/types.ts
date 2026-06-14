@@ -113,6 +113,11 @@ export interface Player {
   activeScroll: SpellScroll | null;
   secondaryCooldown: number;
   bonusDamage: number;
+  armor: number;
+  critChance: number;
+  rogueCritMul: number;
+  rangerMultiShot: boolean;
+  rangerPierceBonus: boolean;
 }
 
 export interface Enemy {
@@ -124,7 +129,7 @@ export interface Enemy {
   baseSpeed: number;
   health: number;
   maxHealth: number;
-  type: 'normal' | 'fast' | 'tank' | 'shooter';
+  type: 'normal' | 'fast' | 'tank' | 'shooter' | 'berserker';
   hitTimer: number;
   angle: number;       // attention / move angle
   spawnTimer: number;  // spawning entry animation
@@ -172,6 +177,7 @@ export interface GameState {
   selectedClass: HeroClass;
   roomLevel: number;
   roomType: 'arena' | 'pillars' | 'cross' | 'corridors' | 'labyrinth' | 'royal';
+  roomModifier: 'none' | 'trapped' | 'treasure' | 'reinforced';
   roomName: string;
   score: number;
   combo: number;

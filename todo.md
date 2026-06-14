@@ -25,10 +25,9 @@
 - [ ] Optimiser les performances mobiles
 
 ## Equilibre gameplay
-- [ ] Nerf Nova de Gel : trop puissante (tue tous les ennemis d'un coup), reduire degats / duree gel / nombre de charges
-- [ ] Nerf lancer de dagues (Filou) : 3 dagues des le depart est trop etendu, a ajuster
-- [ ] Evoluer le nombre de dagues avec le niveau du joueur (ex: 2 au NV1, +1 tous les 3 NV)
-- [ ] Reequilibrer les classes : Filou trop fort early game, Ranger trop faible late game
+- [x] Nerf Nova de Gel : zone limitée (rayon 250px), slow 65% pendant 2.5s au lieu de freeze total, dégâts +2
+- [x] Nerf lancer de dagues (Filou) : commence à 2 dagues, +1 toutes les 2NV (3 au NV3, 4 au NV5)
+- [ ] Reequilibrer les classes : Ranger trop faible late game, Warrior bonusDamage absent
 
 ## Variete des salles
 - [ ] Salles plus grandes (boss rooms, arenas etendues)

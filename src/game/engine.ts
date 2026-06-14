@@ -35,6 +35,7 @@ export function createGameState(): GameState {
     selectedClass: 'warrior',
     roomLevel: 0,
     roomType: 'arena',
+    roomModifier: 'none',
     roomName: 'Hall d\'Initiation',
     score: 0,
     combo: 0,
@@ -117,6 +118,11 @@ export function createPlayer(heroClass: HeroClass): Player {
     },
     secondaryCooldown: 0,
     bonusDamage: 0,
+    armor: 0,
+    critChance: 0,
+    rogueCritMul: 1,
+    rangerMultiShot: false,
+    rangerPierceBonus: false,
   };
   return p;
 }
@@ -127,6 +133,7 @@ export function createPlayer(heroClass: HeroClass): Player {
 
 interface Layout {
   type: GameState['roomType'];
+  modifier: GameState['roomModifier'];
   name: string;
   walls: Wall[];
   chests: BreakableChest[];
@@ -143,7 +150,9 @@ function generateArchitecture(level: number): Layout {
   walls.push({ x: w - pad, y: 0, width: pad, height: h, type: 'wall' });
 
   const types: GameState['roomType'][] = ['arena', 'pillars', 'royal', 'cross', 'corridors', 'labyrinth'];
+  const modifiers: GameState['roomModifier'][] = ['none', 'trapped', 'treasure', 'reinforced'];
   let type: GameState['roomType'];
+  let modifier: GameState['roomModifier'] = 'none';
   let name = '';
 
   if (level === 1) { type = 'arena'; name = 'Hall d\'Initiation'; }
@@ -154,16 +163,30 @@ function generateArchitecture(level: number): Layout {
   else if (level === 6) { type = 'labyrinth'; name = 'Le Dédale Sombre'; }
   else {
     type = types[Math.floor(Math.random() * types.length)];
-    const names: Record<GameState['roomType'], string[]> = {
-      arena: ['Grande Arène Sanctifiée', 'Fosse de Combat'],
-      pillars: ['Salle des Milles Piliers', 'Sanctuaire Soutenu'],
-      royal: ['Bassin Royal', 'Hall des Rois'],
-      cross: ['Carrefour des Maudits', 'Les Quatre Voies'],
-      corridors: ['Passages Étroits', 'Couloirs de la Mort'],
-      labyrinth: ['Le Labyrinthe du Minotaure', 'Dédale Infernal'],
+    if (level > 6) {
+      const modRoll = Math.random();
+      if (level % 5 === 0) { modifier = 'none'; }
+      else if (modRoll < 0.25) modifier = 'trapped';
+      else if (modRoll < 0.50) modifier = 'treasure';
+      else if (modRoll < 0.70) modifier = 'reinforced';
+    }
+    const prefixes: Record<GameState['roomModifier'], string[]> = {
+      none: ['', ''],
+      trapped: ['Piégée', 'Embrasée'],
+      treasure: ['Au Trésor', 'des Richesses'],
+      reinforced: ['Renforcée', 'des Champions'],
     };
-    const list = names[type];
-    name = list[Math.floor(Math.random() * list.length)];
+    const baseNames: Record<GameState['roomType'], string[]> = {
+      arena: ['Grande Arène', 'Fosse de Combat'],
+      pillars: ['Salle des Piliers', 'Sanctuaire Soutenu'],
+      royal: ['Bassin Royal', 'Hall des Rois'],
+      cross: ['Carrefour Maudit', 'Les Quatre Voies'],
+      corridors: ['Passages Étroits', 'Couloirs de la Mort'],
+      labyrinth: ['Labyrinthe Infernal', 'Dédale Sombre'],
+    };
+    const modPrefix = prefixes[modifier];
+    const base = baseNames[type][Math.floor(Math.random() * baseNames[type].length)];
+    name = modifier !== 'none' ? `${modPrefix[0]} — ${base}` : base;
   }
 
   const roomW = w - pad * 2;
@@ -236,6 +259,12 @@ function generateArchitecture(level: number): Layout {
     { x: cx + 180, y: cy },
   ];
   const activeSpots = chestSpots.sort(() => Math.random() - 0.5).slice(0, 2 + Math.floor(Math.random() * 3));
+  if (modifier === 'treasure') {
+    const extraSpots = chestSpots.sort(() => Math.random() - 0.5).slice(0, 3);
+    for (const ep of extraSpots) {
+      if (!activeSpots.includes(ep)) activeSpots.push(ep);
+    }
+  }
   const doorArea = { x: cx - 60, y: h - pad - 120, w: 120, h: 120 };
 
   for (const pos of activeSpots) {
@@ -253,7 +282,7 @@ function generateArchitecture(level: number): Layout {
     }
   }
 
-  return { type, name, walls, chests };
+  return { type, modifier, name, walls, chests };
 }
 
 function createDoor(): Door {
@@ -305,7 +334,9 @@ function findSafeSpawn(radius: number, walls: Wall[], targetX?: number, targetY?
 }
 
 function generateEnemies(level: number, walls: Wall[]): Enemy[] {
-  const count = level === 1 ? 4 : Math.min(4 + Math.floor(level * 1.3), 18);
+  const isBoss = level > 1 && level % 5 === 0;
+  const baseCount = level === 1 ? 4 : Math.min(4 + Math.floor(level * 1.2), 16);
+  const count = isBoss ? baseCount + 2 : baseCount;
   const enemies: Enemy[] = [];
   const eBaseSize = Math.max(22, Math.min(32, Math.round(Math.min(dims.w, dims.h) * 0.035)));
 
@@ -317,7 +348,12 @@ function generateEnemies(level: number, walls: Wall[]): Enemy[] {
 
     if (level > 1) {
       const roll = Math.random();
-      if (level >= 4 && roll < 0.16 + level * 0.02) {
+      if (level >= 6 && roll < 0.12 + level * 0.015) {
+        type = 'berserker';
+        hp = 2;
+        size = Math.round(eBaseSize * 0.9);
+        baseSpd = 120 + level * 8 + Math.random() * 20;
+      } else if (level >= 4 && roll < 0.16 + level * 0.02) {
         type = 'tank';
         hp = 2 + Math.floor(level / 3);
         size = Math.round(eBaseSize * 1.6);
@@ -351,12 +387,34 @@ function generateEnemies(level: number, walls: Wall[]): Enemy[] {
       attackCooldown: 1 + Math.random(),
     });
   }
+
+  if (isBoss) {
+    const bossSize = Math.round(eBaseSize * 2.2);
+    const bossHp = 5 + Math.floor(level / 2);
+    const bossSpot = findSafeSpawn(bossSize / 2 + 6, walls, dims.w / 2, dims.h * 0.3);
+    enemies.push({
+      id: nextEnemyId++,
+      x: bossSpot.x, y: bossSpot.y,
+      size: bossSize,
+      speed: 35 + level * 2, baseSpeed: 35 + level * 2,
+      health: bossHp, maxHealth: bossHp,
+      type: 'tank',
+      hitTimer: 0,
+      angle: Math.random() * Math.PI * 2,
+      spawnTimer: 0.3,
+      dyingTimer: 0,
+      walkPhase: 0,
+      attackCooldown: 2,
+    });
+  }
+
   return enemies;
 }
 
 export function initRoom(state: GameState, keepHealth = true): void {
   const layout = generateArchitecture(state.roomLevel);
   state.roomType = layout.type;
+  state.roomModifier = layout.modifier;
   state.roomName = layout.name;
   state.walls = layout.walls;
   state.chests = layout.chests;
@@ -374,12 +432,19 @@ export function initRoom(state: GameState, keepHealth = true): void {
   if (!keepHealth) {
     state.player = createPlayer(state.selectedClass);
   } else {
-    // preserve charges/health but clear trail/cooldowns
     state.player.attackCooldown = 0;
     state.player.secondaryCooldown = 0;
   }
 
   state.enemies = generateEnemies(state.roomLevel, state.walls);
+  if (state.roomModifier === 'reinforced') {
+    for (const e of state.enemies) {
+      e.health += 1;
+      e.maxHealth += 1;
+      e.speed *= 1.1;
+      e.baseSpeed *= 1.1;
+    }
+  }
   state.door = null;
   state.goldKey = null;
   state.roomTransition = 1;
@@ -550,16 +615,42 @@ function addXp(state: GameState, amount: number, x: number, y: number): void {
     p.xp -= p.xpNext;
     p.heroLevel++;
     p.xpNext = Math.round(p.xpNext * 1.5);
-    p.maxHealth += 1;
     p.health = p.maxHealth;
-    p.baseSpeed += 15;
+    p.baseSpeed += 12;
     p.bonusDamage += 1;
     state.healFlash = 1.0;
     state.flashColor = '#ffd700';
     sfx.victoryStep();
     shake(state, 20, 0.4);
     burst(state.particles, p.x, p.y, 50, '#ffd700', 300, 6, true, 'star');
-    floatText(state.floatingTexts, p.x, p.y - 40, `🌟 NIVEAU ${p.heroLevel} 🌟 !`, '#ffd700', 24);
+    let lvlText = `🌟 NIVEAU ${p.heroLevel} 🌟 !`;
+
+    if (p.heroClass === 'warrior') {
+      p.maxHealth += 2;
+      p.health = p.maxHealth;
+      p.armor += 1;
+      if (p.heroLevel === 3) { lvlText = '🛡️ NIVEAU 3 — ARMURE +1 !'; }
+      else if (p.heroLevel === 6) { p.critChance += 0.2; lvlText = '⚔️ NIVEAU 6 — COUP CRITIQUE !'; }
+      else if (p.heroLevel === 10) { p.armor += 2; lvlText = '🛡️ NIVEAU 10 — PIÈGE D\'ACIER !'; }
+      else { lvlText = `🌟 NIVEAU ${p.heroLevel} — +2 PV, +1 Armure !`; }
+    } else if (p.heroClass === 'ranger') {
+      p.maxHealth += 1;
+      p.health = p.maxHealth;
+      if (p.heroLevel === 3) { p.rangerMultiShot = true; lvlText = '🏹 NIVEAU 3 — DOUBLE TIR !'; }
+      else if (p.heroLevel === 6) { p.rangerPierceBonus = true; lvlText = '🏹 NIVEAU 6 — FLÈCHE PERÇANTE !'; }
+      else if (p.heroLevel === 10) { p.baseCooldown *= 0.85; lvlText = '🏹 NIVEAU 10 — TIR RAPIDE !'; }
+      else { lvlText = `🌟 NIVEAU ${p.heroLevel} — +1 PV, +1 Dégâts !`; }
+    } else if (p.heroClass === 'rogue') {
+      p.maxHealth += 1;
+      p.health = p.maxHealth;
+      p.baseSpeed += 8;
+      if (p.heroLevel === 3) { p.critChance += 0.15; lvlText = '🗡️ NIVEAU 3 — POISON !'; }
+      else if (p.heroLevel === 6) { p.rogueCritMul = 2.5; lvlText = '🗡️ NIVEAU 6 — ASSASSINAT !'; }
+      else if (p.heroLevel === 10) { p.baseCooldown *= 0.8; lvlText = '🗡️ NIVEAU 10 — LAMES JUMELLES !'; }
+      else { lvlText = `🌟 NIVEAU ${p.heroLevel} — +1 PV, +Vitesse !`; }
+    }
+
+    floatText(state.floatingTexts, p.x, p.y - 40, lvlText, '#ffd700', 22);
   }
 }
 
@@ -626,6 +717,26 @@ export function update(state: GameState, dt: number, keys: Keys): void {
   }
   player.speed = player.baseSpeed * hasteMult;
 
+  if (state.roomModifier === 'trapped' && state.time % 3 < dt && player.invincibleTimer <= 0) {
+    const mitigated = Math.max(0, 1 - player.armor);
+    if (mitigated > 0) {
+      player.health -= mitigated;
+      player.invincibleTimer = 0.8;
+      state.damageFlash = 0.6;
+      state.flashColor = '#ff6600';
+      sfx.playerHurt();
+      floatText(state.floatingTexts, player.x, player.y - 26, '🔥 PIÈGE! -1 PV', '#ff6600', 16);
+      burst(state.particles, player.x, player.y, 10, '#ff6600', 120, 3, true, 'shard');
+      if (player.health <= 0) {
+        state.status = 'gameOver';
+        sfx.gameOver();
+        burst(state.particles, player.x, player.y, 60, '#33ff99', 350, 6, true);
+        floatText(state.floatingTexts, player.x, player.y - 32, 'TERRASSÉ...', '#ff4466', 22);
+        return;
+      }
+    }
+  }
+
   // ---- Player Movement ----
   let dx = 0, dy = 0;
   if (keys.left) dx -= 1;
@@ -670,35 +781,40 @@ export function update(state: GameState, dt: number, keys: Keys): void {
       player.attackProgress = 0;
       player.attackCombo = (player.attackCombo % 2) + 1;
     } else if (player.heroClass === 'ranger') {
-      // 🏹 Swift Piercing Arrow
       sfx.bowRelease();
       burst(state.particles, player.x + Math.cos(player.facing) * 16, player.y + Math.sin(player.facing) * 16, 6, '#ffd866', 100, 3, true, 'spark');
-      state.projectiles.push({
-        id: nextProjId++,
-        x: player.x + Math.cos(player.facing) * 18,
-        y: player.y + Math.sin(player.facing) * 18,
-        vx: Math.cos(player.facing) * 750,
-        vy: Math.sin(player.facing) * 750,
-        type: 'arrow',
-        friendly: true,
-        damage: 1 + player.bonusDamage,
-        piercing: true,
-        radius: 8,
-        life: 1.4,
-        angle: player.facing,
-      });
+      const arrowDmg = 1 + player.bonusDamage;
+      const arrows = player.rangerMultiShot ? [player.facing - 0.12, player.facing, player.facing + 0.12] : [player.facing];
+      for (const ang of arrows) {
+        state.projectiles.push({
+          id: nextProjId++,
+          x: player.x + Math.cos(player.facing) * 18,
+          y: player.y + Math.sin(player.facing) * 18,
+          vx: Math.cos(ang) * 750,
+          vy: Math.sin(ang) * 750,
+          type: 'arrow',
+          friendly: true,
+          damage: arrowDmg,
+          piercing: player.rangerPierceBonus ? true : true,
+          radius: 8,
+          life: 1.4,
+          angle: ang,
+        });
+      }
       shake(state, 4, 0.08);
-      floatText(state.floatingTexts, player.x, player.y - 20, 'TIR 🏹', '#ffd866', 14);
+      floatText(state.floatingTexts, player.x, player.y - 20, player.rangerMultiShot ? 'DOUBLE TIR 🏹🏹' : 'TIR 🏹', '#ffd866', 14);
     } else if (player.heroClass === 'rogue') {
       sfx.daggersFan();
       shake(state, 4, 0.08);
       const lvl = player.heroLevel;
-      const nbDaggers = lvl >= 5 ? 4 : lvl >= 3 ? 3 : 2;
-      const spread = nbDaggers === 4 ? 0.35 : nbDaggers === 3 ? 0.28 : 0.2;
+      const nbDaggers = lvl >= 10 ? 3 : lvl >= 5 ? 2 : 1;
+      const spread = nbDaggers === 3 ? 0.3 : nbDaggers === 2 ? 0.22 : 0;
       floatText(state.floatingTexts, player.x, player.y - 20, `DAGUES 🗡️ ×${nbDaggers}`, '#7dffc4', 14);
       for (let i = 0; i < nbDaggers; i++) {
         const angOffset = nbDaggers === 1 ? 0 : -spread + (spread * 2) * (i / (nbDaggers - 1));
         const shootAng = player.facing + angOffset;
+        const isCrit = Math.random() < player.critChance;
+        const daggerDmg = (2 + player.bonusDamage) * (isCrit ? player.rogueCritMul : 1);
         state.projectiles.push({
           id: nextProjId++,
           x: player.x + Math.cos(player.facing) * 14,
@@ -707,12 +823,15 @@ export function update(state: GameState, dt: number, keys: Keys): void {
           vy: Math.sin(shootAng) * 820,
           type: 'dagger',
           friendly: true,
-          damage: 1 + player.bonusDamage,
+          damage: daggerDmg,
           piercing: false,
           radius: 7,
           life: 0.85,
           angle: shootAng,
         });
+        if (isCrit) {
+          floatText(state.floatingTexts, player.x + Math.cos(shootAng) * 30, player.y - 24, `CRIT ×${player.rogueCritMul}!`, '#ff4444', 15);
+        }
       }
     }
   }
@@ -726,10 +845,17 @@ export function update(state: GameState, dt: number, keys: Keys): void {
       for (const enemy of state.enemies) {
         if (enemy.health <= 0 || enemy.spawnTimer > 0 || enemy.dyingTimer > 0 || enemy.hitTimer > 0.05) continue;
         if (pointInArc(enemy.x, enemy.y, player.x, player.y, player.attackAngle, ATTACK_ARC, 82 + enemy.size * 0.38)) {
-          enemy.health--;
+          const isCrit = Math.random() < player.critChance;
+          const dmg = (1 + player.bonusDamage) * (isCrit ? (player.heroClass === 'rogue' ? player.rogueCritMul : 2) : 1);
+          enemy.health -= dmg;
           enemy.hitTimer = 0.22;
           hitRegistered = true;
           sfx.hitEnemy();
+
+          if (isCrit) {
+            floatText(state.floatingTexts, enemy.x, enemy.y - 16, `CRIT ×${player.heroClass === 'rogue' ? player.rogueCritMul : 2}!`, '#ff4444', 18);
+            shake(state, 12, 0.18);
+          }
 
           const kAngle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
           const kb = enemy.type === 'tank' ? 10 : 28;
@@ -737,13 +863,13 @@ export function update(state: GameState, dt: number, keys: Keys): void {
           enemy.y += Math.sin(kAngle) * kb;
           resolveWallCollision({ x: enemy.x, y: enemy.y, radius: enemy.size / 2 }, state.walls);
 
-          const pColor = enemy.type === 'tank' ? '#ff5555' : enemy.type === 'fast' ? '#ffbb33' : enemy.type === 'shooter' ? '#cc66ff' : '#ff7755';
+          const pColor = enemy.type === 'tank' ? '#ff5555' : enemy.type === 'berserker' ? '#ff3300' : enemy.type === 'fast' ? '#ffbb33' : enemy.type === 'shooter' ? '#cc66ff' : '#ff7755';
           burst(state.particles, enemy.x, enemy.y, 14, pColor, 180, 4, true, 'slash');
           shake(state, 8, 0.12);
 
           if (enemy.health <= 0) {
             enemy.dyingTimer = 0.4; enemy.health = 0;
-            addXp(state, enemy.type === 'tank' ? 35 : enemy.type === 'shooter' ? 25 : enemy.type === 'fast' ? 20 : 15, enemy.x, enemy.y);
+            addXp(state, enemy.type === 'tank' ? 35 : enemy.type === 'berserker' ? 30 : enemy.type === 'shooter' ? 25 : enemy.type === 'fast' ? 20 : 15, enemy.x, enemy.y);
           }
         }
       }
@@ -816,7 +942,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
         burst(state.particles, enemy.x, enemy.y, 6, '#00eeff', 100, 3.5, true, 'shard');
         if (enemy.health <= 0) {
           enemy.dyingTimer = 0.4; enemy.health = 0;
-          addXp(state, enemy.type === 'tank' ? 35 : enemy.type === 'shooter' ? 25 : enemy.type === 'fast' ? 20 : 15, enemy.x, enemy.y);
+          addXp(state, enemy.type === 'tank' ? 35 : enemy.type === 'berserker' ? 30 : enemy.type === 'shooter' ? 25 : enemy.type === 'fast' ? 20 : 15, enemy.x, enemy.y);
         }
       }
       for (const chest of state.chests) {
@@ -882,7 +1008,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
 
           if (enemy.health <= 0) {
             enemy.dyingTimer = 0.4; enemy.health = 0;
-            addXp(state, enemy.type === 'tank' ? 35 : enemy.type === 'shooter' ? 25 : enemy.type === 'fast' ? 20 : 15, enemy.x, enemy.y);
+            addXp(state, enemy.type === 'tank' ? 35 : enemy.type === 'berserker' ? 30 : enemy.type === 'shooter' ? 25 : enemy.type === 'fast' ? 20 : 15, enemy.x, enemy.y);
           }
           if (!proj.piercing) { remove = true; break; }
         }
@@ -914,15 +1040,22 @@ export function update(state: GameState, dt: number, keys: Keys): void {
     if (!proj.friendly && !remove && player.invincibleTimer <= 0) {
       if (circleCircle(proj.x, proj.y, proj.radius, player.x, player.y, player.radius)) {
         remove = true;
-        player.health--;
-        player.invincibleTimer = 1.2;
-        state.damageFlash = 1;
-        state.flashColor = '#ff0033';
-        sfx.playerHurt();
-        shake(state, 14, 0.3);
-        burst(state.particles, player.x, player.y, 22, '#cc66ff', 240, 5, true);
-        state.combo = 0;
-        floatText(state.floatingTexts, player.x, player.y - 26, '-1 PV', '#ff5566', 18);
+        const rawDmg = 1;
+        const mitigated = Math.max(0, rawDmg - player.armor);
+        if (mitigated <= 0) {
+          floatText(state.floatingTexts, player.x, player.y - 26, 'BLOQUÉ! 🛡️', '#66ccff', 16);
+          sfx.hitEnemy();
+        } else {
+          player.health -= mitigated;
+          player.invincibleTimer = 1.2;
+          state.damageFlash = 1;
+          state.flashColor = '#ff0033';
+          sfx.playerHurt();
+          shake(state, 14, 0.3);
+          burst(state.particles, player.x, player.y, 22, '#cc66ff', 240, 5, true);
+          state.combo = 0;
+          floatText(state.floatingTexts, player.x, player.y - 26, `-${mitigated} PV`, '#ff5566', 18);
+        }
 
         if (player.health <= 0) {
           state.status = 'gameOver';
@@ -1008,7 +1141,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
       continue;
     }
 
-    enemy.walkPhase += dt * (enemy.type === 'fast' ? 22 : enemy.type === 'tank' ? 8 : 14);
+    enemy.walkPhase += dt * (enemy.type === 'berserker' ? 24 : enemy.type === 'fast' ? 22 : enemy.type === 'tank' ? 8 : 14);
     if (enemy.hitTimer > 0) enemy.hitTimer -= dt;
     if (enemy.attackCooldown > 0) enemy.attackCooldown -= dt;
 
@@ -1037,6 +1170,13 @@ export function update(state: GameState, dt: number, keys: Keys): void {
         angle: ang,
       });
       enemy.angle = ang;
+    }
+
+    if (enemy.type === 'berserker' && dist < 180 && dist > 50 && enemy.attackCooldown <= 0) {
+      enemy.dashTimer = 0.25;
+      enemy.attackCooldown = 1.8;
+      enemy.angle = Math.atan2(edy, edx);
+      burst(state.particles, enemy.x, enemy.y, 6, '#ff3300', 80, 3, true, 'shard');
     }
 
     if (enemy.dashTimer && enemy.dashTimer > 0) {
@@ -1079,22 +1219,30 @@ export function update(state: GameState, dt: number, keys: Keys): void {
   for (const enemy of state.enemies) {
     if (enemy.health <= 0 || enemy.spawnTimer > 0 || enemy.dyingTimer > 0 || (enemy.frozenTimer && enemy.frozenTimer > 0)) continue;
     if (player.invincibleTimer <= 0 && circleCircle(player.x, player.y, player.radius, enemy.x, enemy.y, enemy.size / 2)) {
-      player.health--;
-      player.invincibleTimer = 1.2;
-      state.damageFlash = 1;
-      state.flashColor = '#ff0033';
-      sfx.playerHurt();
-      shake(state, 15, 0.32);
-      state.hitStop = 0.08;
-      burst(state.particles, player.x, player.y, 24, '#33ff99', 260, 5, true);
+      const rawDmg = 1;
+      const mitigated = Math.max(0, rawDmg - player.armor);
+      if (mitigated <= 0) {
+        floatText(state.floatingTexts, player.x, player.y - 26, 'BLOQUÉ! 🛡️', '#66ccff', 16);
+        sfx.hitEnemy();
+        player.invincibleTimer = 0.5;
+      } else {
+        player.health -= mitigated;
+        player.invincibleTimer = 1.2;
+        state.damageFlash = 1;
+        state.flashColor = '#ff0033';
+        sfx.playerHurt();
+        shake(state, 15, 0.32);
+        state.hitStop = 0.08;
+        burst(state.particles, player.x, player.y, 24, '#33ff99', 260, 5, true);
 
-      const kAngle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-      player.x += Math.cos(kAngle) * 44;
-      player.y += Math.sin(kAngle) * 44;
-      resolveWallCollision(player, state.walls);
+        const kAngle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+        player.x += Math.cos(kAngle) * 44;
+        player.y += Math.sin(kAngle) * 44;
+        resolveWallCollision(player, state.walls);
 
-      state.combo = 0;
-      floatText(state.floatingTexts, player.x, player.y - 26, '-1 PV', '#ff5566', 18);
+        state.combo = 0;
+        floatText(state.floatingTexts, player.x, player.y - 26, `-${mitigated} PV`, '#ff5566', 18);
+      }
 
       if (player.health <= 0) {
         state.status = 'gameOver';
@@ -1113,7 +1261,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
     if (e.dyingTimer > 0) {
       e.dyingTimer -= dt;
       if (e.dyingTimer <= 0) {
-        const color = e.type === 'tank' ? '#ff3322' : e.type === 'fast' ? '#ffce33' : e.type === 'shooter' ? '#cc66ff' : '#ff6644';
+        const color = e.type === 'tank' ? '#ff3322' : e.type === 'berserker' ? '#ff3300' : e.type === 'fast' ? '#ffce33' : e.type === 'shooter' ? '#cc66ff' : '#ff6644';
         shatter(state.particles, e.x, e.y, color, e.size);
         burst(state.particles, e.x, e.y, 20, color, 240, 4.5, true);
 
@@ -1122,7 +1270,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
           spawnLoot(state, e.x, e.y);
         }
 
-        const base = e.type === 'tank' ? 45 : e.type === 'fast' ? 20 : e.type === 'shooter' ? 30 : 12;
+        const base = e.type === 'tank' ? 45 : e.type === 'berserker' ? 30 : e.type === 'fast' ? 20 : e.type === 'shooter' ? 30 : 12;
         state.combo++;
         state.comboTimer = COMBO_WINDOW;
         const comboMult = 1 + (state.combo - 1) * 0.25;

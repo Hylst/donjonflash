@@ -124,6 +124,7 @@ function buildLights(state: GameState, time: number): Light[] {
     const col = e.type === 'tank' ? 'rgba(255,60,40,'
       : e.type === 'fast' ? 'rgba(255,200,30,'
       : e.type === 'shooter' ? 'rgba(210,90,255,'
+      : e.type === 'berserker' ? 'rgba(255,50,0,'
       : 'rgba(255,100,55,';
     lights.push({ x: e.x, y: e.y, r: e.size * 4.5, color: col, intensity: 0.45 });
   }
@@ -588,6 +589,8 @@ function renderEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number):
     c1 = isHit ? '#fff09a' : '#f4b520'; c2 = '#7a5402'; border = 'rgba(255,220,60,0.8)';
   } else if (type === 'shooter') {
     c1 = isHit ? '#e6c0ff' : '#b24bf0'; c2 = '#3c0e60'; border = 'rgba(210,120,255,0.8)';
+  } else if (type === 'berserker') {
+    c1 = isHit ? '#ffaa88' : '#ff3300'; c2 = '#660000'; border = 'rgba(255,80,0,0.8)';
   } else {
     if (isHit) c1 = '#ffd0b0';
   }
@@ -640,6 +643,21 @@ function renderEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number):
     ctx.strokeStyle = border; ctx.lineWidth = 2; ctx.stroke();
     ctx.fillStyle = '#ffd866'; ctx.fillRect(half - 2, -3, 16, 6);
     ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(half + 14, 0, 5, 0, Math.PI * 2); ctx.fill();
+  } else if (type === 'berserker') {
+    const rageWave = Math.sin(walkPhase * 1.8) * 3;
+    ctx.fillStyle = c1; ctx.strokeStyle = '#660000'; ctx.lineWidth = 2;
+    for (const sgn of [-1, 1]) {
+      ctx.save(); ctx.translate(sgn * half * 0.3, sgn * (half + 2)); ctx.rotate(sgn * 0.3 + rageWave * 0.1);
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-4, sgn * 18); ctx.lineTo(6, sgn * 16); ctx.closePath();
+      ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+    const crag = ctx.createRadialGradient(0, 0, 0, 0, 0, s);
+    crag.addColorStop(0, c1); crag.addColorStop(1, c2);
+    ctx.fillStyle = crag; roundRect(ctx, -half, -half, s, s, 4); ctx.fill();
+    ctx.strokeStyle = border; ctx.lineWidth = 2.5; roundRect(ctx, -half, -half, s, s, 4); ctx.stroke();
+    ctx.fillStyle = '#ff0';
+    ctx.beginPath(); ctx.moveTo(-half + 2, -half - 6); ctx.lineTo(half - 2, -half - 6); ctx.lineTo(half - 4, -half + 2); ctx.lineTo(-half + 4, -half + 2); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-half + 2, half + 6); ctx.lineTo(half - 2, half + 6); ctx.lineTo(half - 4, half - 2); ctx.lineTo(-half + 4, half - 2); ctx.closePath(); ctx.fill();
   }
 
   // Eyes
@@ -654,8 +672,8 @@ function renderEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number):
   ctx.restore(); // rotate
   ctx.restore(); // translate
 
-  // Tank HP gauge
-  if (type === 'tank' && enemy.maxHealth > 1 && enemy.dyingTimer <= 0) {
+  // HP gauge for tank & berserker
+  if ((type === 'tank' || type === 'berserker') && enemy.maxHealth > 1 && enemy.dyingTimer <= 0) {
     const bw = baseSize * 1.4, bh = 5;
     const bx = cx - bw / 2, by = cy - baseSize * 0.8 - 10;
     ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
@@ -847,11 +865,14 @@ function renderTransition(ctx: CanvasRenderingContext2D, state: GameState): void
 
     ctx.fillStyle = '#7dffc4'; ctx.font = 'bold 44px Orbitron, monospace';
     ctx.shadowColor = '#00e088'; ctx.shadowBlur = 20;
-    ctx.fillText(`SALLE ${state.roomLevel} — ${state.roomName.toUpperCase()}`, dims.w / 2, dims.h / 2 - 10);
+    const isBoss = state.roomLevel > 1 && state.roomLevel % 5 === 0;
+    const modLabel = state.roomModifier === 'trapped' ? ' [PIÉGÉE]' : state.roomModifier === 'treasure' ? ' [TRÉSOR]' : state.roomModifier === 'reinforced' ? ' [RENFORCÉE]' : '';
+    const bossLabel = isBoss ? ' ⚔️ BOSS' : '';
+    ctx.fillText(`SALLE ${state.roomLevel}${bossLabel} — ${state.roomName.toUpperCase()}${modLabel}`, dims.w / 2, dims.h / 2 - 10);
     ctx.shadowBlur = 0;
 
-    const diff = state.roomLevel === 1 ? 'Très Facile (Initiation)' : state.roomLevel <= 3 ? 'Facile' : state.roomLevel <= 6 ? 'Moyen' : state.roomLevel <= 10 ? 'Difficile' : 'Infernal';
-    const dc = state.roomLevel === 1 ? '#00ffaa' : state.roomLevel <= 3 ? '#7dffc4' : state.roomLevel <= 6 ? '#ffce5a' : state.roomLevel <= 10 ? '#ff7a55' : '#ff0044';
+    const diff = isBoss ? 'BOSS ⚔️' : state.roomLevel === 1 ? 'Très Facile (Initiation)' : state.roomLevel <= 3 ? 'Facile' : state.roomLevel <= 6 ? 'Moyen' : state.roomLevel <= 10 ? 'Difficile' : 'Infernal';
+    const dc = isBoss ? '#ff2200' : state.roomLevel === 1 ? '#00ffaa' : state.roomLevel <= 3 ? '#7dffc4' : state.roomLevel <= 6 ? '#ffce5a' : state.roomLevel <= 10 ? '#ff7a55' : '#ff0044';
     ctx.fillStyle = dc; ctx.font = '16px Orbitron, monospace';
     ctx.fillText(`Difficulté : ${diff}`, dims.w / 2, dims.h / 2 + 30);
     ctx.globalAlpha = 1;
