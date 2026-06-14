@@ -16,6 +16,7 @@ import type {
   BreakableChest,
   ConsumableItem,
   HeroClass,
+  Difficulty,
 } from './types';
 import { dims } from './dimensions';
 import { sfx, startMusic } from './audio';
@@ -33,6 +34,7 @@ export function createGameState(): GameState {
   return {
     status: 'menu',
     selectedClass: 'warrior',
+    selectedDifficulty: 'easy',
     roomLevel: 0,
     roomType: 'arena',
     roomModifier: 'none',
@@ -62,7 +64,7 @@ export function createGameState(): GameState {
   };
 }
 
-export function createPlayer(heroClass: HeroClass): Player {
+export function createPlayer(heroClass: HeroClass, difficulty: Difficulty = 'easy'): Player {
   let hp = 7;
   let spd = 250;
   let cd = 0.32;
@@ -73,18 +75,21 @@ export function createPlayer(heroClass: HeroClass): Player {
   if (heroClass === 'ranger') {
     hp = 5;
     spd = 280;
-    cd = 0.38; // arrow pull rate
+    cd = 0.38;
     scrollName = 'scroll_nova';
     sTitle = 'Nova de Gel';
     sIcon = '❄️';
   } else if (heroClass === 'rogue') {
     hp = 4;
     spd = 320;
-    cd = 0.22; // swift daggers rate
+    cd = 0.22;
     scrollName = 'scroll_fireball';
     sTitle = 'Boule de Feu';
     sIcon = '🔥';
   }
+
+  if (difficulty === 'normal') { hp = Math.max(1, Math.round(hp * 0.8)); cd *= 1.25; }
+  else if (difficulty === 'hard') { hp = Math.max(1, Math.round(hp * 0.6)); cd *= 1.5; }
 
   const p: Player = {
     heroClass,
@@ -431,7 +436,7 @@ export function initRoom(state: GameState, keepHealth = true): void {
   state.player.facing = -Math.PI / 2;
 
   if (!keepHealth) {
-    state.player = createPlayer(state.selectedClass);
+    state.player = createPlayer(state.selectedClass, state.selectedDifficulty);
   } else {
     state.player.attackCooldown = 0;
     state.player.secondaryCooldown = 0;
@@ -669,7 +674,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
       state.score = 0;
       state.combo = 0;
       nextEnemyId = 0; nextChestId = 0; nextItemId = 0; nextProjId = 0;
-      state.player = createPlayer(state.selectedClass);
+      state.player = createPlayer(state.selectedClass, state.selectedDifficulty);
       startMusic();
       startRoom(state, 1);
     }

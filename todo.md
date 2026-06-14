@@ -18,22 +18,30 @@
 - [ ] Deployer via Coolify
 
 ## Ameliorations futures
-- [ ] Ajouter un mode "endless" (salles infinies)
-- [ ] Ajouter un systeme de sauvegarde (localStorage)
-- [ ] Ajouter des boss de fin de zone
 - [ ] Ajouter un almanach des ennemis
-- [ ] Optimiser les performances mobiles
 
 ## Equilibre gameplay
 - [x] Nerf Nova de Gel : zone limitée (rayon 250px), slow 65% pendant 2.5s au lieu de freeze total, dégâts +2
-- [x] Nerf lancer de dagues (Filou) : commence à 2 dagues, +1 toutes les 2NV (3 au NV3, 4 au NV5)
-- [ ] Reequilibrer les classes : Ranger trop faible late game, Warrior bonusDamage absent
+- [x] Nerf lancer de dagues (Filou) : 1 dague NV1, +1 NV5, +1 NV10 (max 3), dégâts ×2/dague
+- [x] Rééquilibrer les classes : Warrior armure/crit, Ranger double tir/perçant, Rogue crit/assassinat
+- [x] Ajouter modes de difficulté : Facile (standard), Normal (-25% tir, -20% PV), Difficile (-50% tir, -40% PV)
+- [ ] Ajouter mode Endless (salles infinies) avec leaderboard
+- [ ] Ajouter un système de sauvegarde (localStorage)
 
 ## Variete des salles
-- [ ] Salles plus grandes (boss rooms, arenas etendues)
-- [ ] Labyrinthe avec murs plus complexes et pieges
-- [ ] Ensembles de salles connectees par des couloirs
-- [ ] Pieges au sol (dallees piegees, poison, glace)
-- [ ] Grilles avec cles intermediaires (avant la cle d'or)
+- [x] Modificateurs de salle : Piégée (dégâts périodiques), Trésor (coffres bonus), Renforcée (ennemis buffés)
+- [x] Mini-boss toutes les 5 salles (tank géant + ennemis bonus)
+- [x] Nouvel ennemi : Berserker (NV6+, dash rage, rapide)
+- [ ] Salles plus grandes (boss rooms, arenas étendues)
+- [ ] Labyrinthe avec murs plus complexes et pièges
+- [ ] Ensembles de salles connectées par des couloirs
+- [ ] Grilles avec clés intermédiaires (avant la clé d'or)
 - [ ] Portes secondaires / secrets dans les murs
-- [ ] Nouveaux types de salles : temple, forge, bibliotheque, cimetiere
+- [ ] Nouveaux types de salles : temple, forge, bibliothèque, cimetière
+
+## Performance
+- [x] Particles cap (500 max) + fillRect au lieu de arc/shadowBlur
+- [x] Wall pattern caching
+- [x] Floating texts cap (20 max)
+- [x] Nettoyage shadowBlur yeux/piliers/shooters
+- [ ] Optimiser les performances mobiles

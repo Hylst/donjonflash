@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import type { GameState, Keys, HeroClass, SpellScroll } from './game/types';
+import type { GameState, Keys, HeroClass, SpellScroll, Difficulty } from './game/types';
 import { createGameState, update, rescale } from './game/engine';
 import { render } from './game/renderer';
 import { dims } from './game/dimensions';
@@ -11,6 +11,7 @@ import t3Url from './assets/onboarding_3.jpg';
 interface Hud {
   status: GameState['status'];
   selectedClass: HeroClass;
+  selectedDifficulty: Difficulty;
   heroLevel: number;
   xp: number;
   xpNext: number;
@@ -47,7 +48,7 @@ export default function App() {
   const [showTouch, setShowTouch] = useState(false);
   const [onboardingSlide, setOnboardingSlide] = useState<number>(0);
   const [hud, setHud] = useState<Hud>({
-    status: 'menu', selectedClass: 'warrior', heroLevel: 1, xp: 0, xpNext: 100, roomLevel: 0, roomName: '', roomModifier: 'none', score: 0, combo: 0, comboPct: 0,
+    status: 'menu', selectedClass: 'warrior', selectedDifficulty: 'easy', heroLevel: 1, xp: 0, xpNext: 100, roomLevel: 0, roomName: '', roomModifier: 'none', score: 0, combo: 0, comboPct: 0,
     health: 7, maxHealth: 7, enemyCount: 0, chestCount: 0, goldKey: false, doorOpen: false, activeScroll: null, hasteActive: false, hasteTime: 0, hasteMax: 1, shieldActive: false, shieldTime: 0, shieldMax: 1, isMuted: false,
   });
 
@@ -74,6 +75,7 @@ export default function App() {
       setHud({
         status: state.status,
         selectedClass: state.selectedClass,
+        selectedDifficulty: state.selectedDifficulty,
         heroLevel: state.player.heroLevel,
         xp: state.player.xp,
         xpNext: state.player.xpNext,
@@ -187,6 +189,11 @@ export default function App() {
     setHud(h => ({ ...h, selectedClass: cls }));
   };
 
+  const selectDifficulty = (diff: Difficulty) => () => {
+    stateRef.current.selectedDifficulty = diff;
+    setHud(h => ({ ...h, selectedDifficulty: diff }));
+  };
+
   const startTutorial = () => {
     stateRef.current.status = 'onboarding';
     setOnboardingSlide(0);
@@ -267,6 +274,27 @@ export default function App() {
                 wpn="Dagues (×1 NV1, ×2 NV5, ×3 NV10)" spell="Boules de Feu 🔥"
                 accent="from-cyan-500/20 to-blue-900/40 border-cyan-500/50 shadow-cyan-500/20"
               />
+            </div>
+          </div>
+
+          {/* Difficulty Selector */}
+          <div className="w-full max-w-5xl my-2">
+            <h2 className="text-center text-xs sm:text-sm tracking-widest text-slate-400 uppercase mb-2 flex items-center justify-center gap-2">
+              <span className="h-px w-6 bg-slate-500/50" /> DIFFICULTÉ <span className="h-px w-6 bg-slate-500/50" />
+            </h2>
+            <div className="flex justify-center gap-3">
+              {([
+                { key: 'easy' as Difficulty, label: 'Facile', icon: '🌱', desc: 'Mode standard', color: 'from-emerald-500/20 to-green-900/40 border-emerald-500/50 text-emerald-300' },
+                { key: 'normal' as Difficulty, label: 'Normal', icon: '⚔️', desc: '-25% tir, -20% PV', color: 'from-amber-500/20 to-orange-900/40 border-amber-500/50 text-amber-300' },
+                { key: 'hard' as Difficulty, label: 'Difficile', icon: '💀', desc: '-50% tir, -40% PV', color: 'from-red-500/20 to-rose-900/40 border-red-500/50 text-red-300' },
+              ]).map(d => (
+                <button key={d.key} onClick={selectDifficulty(d.key)}
+                  className={`px-4 py-2 rounded-xl border bg-gradient-to-b ${d.color} transition-all cursor-pointer text-center ${hud.selectedDifficulty === d.key ? 'ring-2 ring-white/60 scale-105' : 'opacity-60 hover:opacity-90'}`}>
+                  <div className="text-lg">{d.icon}</div>
+                  <div className="font-bold text-xs sm:text-sm">{d.label}</div>
+                  <div className="text-[10px] opacity-70">{d.desc}</div>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -395,7 +423,12 @@ export default function App() {
                 )}
               </div>
               <div className="text-[10px] sm:text-xs text-slate-400 truncate mt-0.5">
-                {hud.selectedClass === 'warrior' ? 'Guerrier' : hud.selectedClass === 'ranger' ? 'Ranger' : 'Filou'} · Hylst - Geoffroy
+                {hud.selectedClass === 'warrior' ? 'Guerrier' : hud.selectedClass === 'ranger' ? 'Ranger' : 'Filou'}
+                {' · '}
+                <span className={hud.selectedDifficulty === 'hard' ? 'text-red-400' : hud.selectedDifficulty === 'normal' ? 'text-amber-400' : 'text-emerald-400'}>
+                  {hud.selectedDifficulty === 'easy' ? 'Facile' : hud.selectedDifficulty === 'normal' ? 'Normal' : 'Difficile'}
+                </span>
+                {' · Hylst - Geoffroy'}
               </div>
             </div>
           </div>

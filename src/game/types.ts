@@ -9,6 +9,7 @@ export interface Vec2 {
 }
 
 export type HeroClass = 'warrior' | 'ranger' | 'rogue';
+export type Difficulty = 'easy' | 'normal' | 'hard';
 
 export interface ConsumableItem {
   id: number;
@@ -175,6 +176,7 @@ export interface ScreenShake {
 export interface GameState {
   status: 'menu' | 'onboarding' | 'playing' | 'paused' | 'gameOver';
   selectedClass: HeroClass;
+  selectedDifficulty: Difficulty;
   roomLevel: number;
   roomType: 'arena' | 'pillars' | 'cross' | 'corridors' | 'labyrinth' | 'royal';
   roomModifier: 'none' | 'trapped' | 'treasure' | 'reinforced';
