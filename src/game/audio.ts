@@ -168,11 +168,15 @@ export const sfx = {
 };
 
 // ============================================================================
-// PROCEDURAL DUNGEON-SYNTH BGM
+// PROCEDURAL DUNGEON-SYNTH BGM — Enhanced
 // ============================================================================
 
-// Immersive epic dungeon Phrygian scale
-const scale = [220, 233.08, 261.63, 293.66, 329.63, 349.23, 392.00, 440];
+// Phrygian dominant scale (exotic dungeon feel)
+const scale = [196, 207.65, 233.08, 261.63, 277.18, 311.13, 349.23, 392];
+const bassScale = [98, 116.54, 130.81, 146.83];
+
+// Chord progressions (root note indices in scale)
+const progRoots = [0, 3, 2, 5, 0, 4, 1, 3];
 
 export function startMusic(): void {
   initAudio();
@@ -181,58 +185,97 @@ export function startMusic(): void {
   if (ctx.state === 'suspended') void ctx.resume();
 
   let step = 0;
-  const tempoMs = 180; // (~166 bpm 8-bit tracker)
+  const tempoMs = 160;
 
   const loop = () => {
     if (!isMusicPlaying || !ctx || !musicGain || isMuted) {
       if (isMusicPlaying) musicTimer = window.setTimeout(loop, tempoMs);
       return;
     }
+    const now = ctx.currentTime;
+    const barPos = step % 16;
 
-    // 1) Bass ostinato step (8-step rhythmic pattern)
-    if (step % 2 === 0) {
-      const bassFreq = scale[step % 4 === 0 ? 0 : 2] / 2; // Drop an octave
-      const bassOsc = ctx.createOscillator();
-      const bassEnv = ctx.createGain();
-      bassOsc.type = 'sawtooth';
-      bassOsc.frequency.setValueAtTime(bassFreq, ctx.currentTime);
-      bassEnv.gain.setValueAtTime(0.4, ctx.currentTime);
-      bassEnv.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.17);
-      bassOsc.connect(bassEnv); bassEnv.connect(musicGain);
-      bassOsc.start(); bassOsc.stop(ctx.currentTime + 0.17);
+    // 1) Kick drum (beats 0, 4, 8, 12)
+    if (barPos % 4 === 0) {
+      const kickOsc = ctx.createOscillator();
+      const kickGain = ctx.createGain();
+      kickOsc.type = 'sine';
+      kickOsc.frequency.setValueAtTime(150, now);
+      kickOsc.frequency.exponentialRampToValueAtTime(30, now + 0.08);
+      kickGain.gain.setValueAtTime(0.6, now);
+      kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      kickOsc.connect(kickGain); kickGain.connect(musicGain);
+      kickOsc.start(now); kickOsc.stop(now + 0.15);
     }
 
-    // 2) Rich Harmony Chord step (Pad)
-    if (step % 4 === 0) {
-      const root = scale[step % 8 === 0 ? 0 : 2];
+    // 2) Hi-hat (every 2 steps, tighter on offbeats)
+    if (barPos % 2 === 0) {
+      const hhVol = barPos % 4 === 2 ? 0.18 : 0.12;
+      playNoiseInMusic(0.04, hhVol, 7000);
+    }
+
+    // 3) Snare (beats 4, 12)
+    if (barPos === 4 || barPos === 12) {
+      playNoiseInMusic(0.1, 0.3, 3500);
+      const snOsc = ctx.createOscillator();
+      const snGain = ctx.createGain();
+      snOsc.type = 'triangle';
+      snOsc.frequency.setValueAtTime(220, now);
+      snGain.gain.setValueAtTime(0.25, now);
+      snGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      snOsc.connect(snGain); snGain.connect(musicGain);
+      snOsc.start(now); snOsc.stop(now + 0.08);
+    }
+
+    // 4) Bass with filter sweep (every step, pattern varies)
+    const bassPattern = [0, 0, 2, 0, 3, 3, 2, 0, 0, 0, 2, 3, 0, 1, 2, 0];
+    const bassNote = bassScale[bassPattern[barPos]];
+    const bassOsc = ctx.createOscillator();
+    const bassFilter = ctx.createBiquadFilter();
+    const bassEnv = ctx.createGain();
+    bassOsc.type = 'sawtooth';
+    bassOsc.frequency.setValueAtTime(bassNote, now);
+    bassFilter.type = 'lowpass';
+    bassFilter.frequency.setValueAtTime(800, now);
+    bassFilter.frequency.exponentialRampToValueAtTime(200, now + 0.12);
+    bassEnv.gain.setValueAtTime(0.35, now);
+    bassEnv.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+    bassOsc.connect(bassFilter); bassFilter.connect(bassEnv); bassEnv.connect(musicGain);
+    bassOsc.start(now); bassOsc.stop(now + 0.14);
+
+    // 5) Harmony chord pad (every 8 steps, with delay tail)
+    if (barPos % 8 === 0) {
+      const rootIdx = progRoots[(step >> 4) % progRoots.length];
+      const root = scale[rootIdx];
+      const third = scale[Math.min(rootIdx + 2, 7)];
       const fifth = root * 1.5;
-      [root, fifth].forEach(f => {
-        const chordOsc = ctx!.createOscillator();
-        const chordEnv = ctx!.createGain();
-        chordOsc.type = 'triangle';
-        chordOsc.frequency.setValueAtTime(f, ctx!.currentTime);
-        chordEnv.gain.setValueAtTime(0.15, ctx!.currentTime);
-        chordEnv.gain.exponentialRampToValueAtTime(0.01, ctx!.currentTime + 0.35);
-        chordOsc.connect(chordEnv); chordEnv.connect(musicGain!);
-        chordOsc.start(); chordOsc.stop(ctx!.currentTime + 0.35);
-      });
+      for (const f of [root, third, fifth]) {
+        const cOsc = ctx!.createOscillator();
+        const cGain = ctx!.createGain();
+        cOsc.type = 'triangle';
+        cOsc.frequency.setValueAtTime(f, now);
+        cGain.gain.setValueAtTime(0.1, now);
+        cGain.gain.exponentialRampToValueAtTime(0.005, now + 0.7);
+        cOsc.connect(cGain); cGain.connect(musicGain!);
+        cOsc.start(now); cOsc.stop(now + 0.7);
+      }
     }
 
-    // 3) Arpeggiator Lead melody step
-    const melStep = [0, 2, 4, 1, 3, 5, 2, 7][step % 8];
-    const leadFreq = scale[melStep];
-    const leadOsc = ctx.createOscillator();
-    const leadEnv = ctx.createGain();
-    leadOsc.type = 'square';
-    leadOsc.frequency.setValueAtTime(leadFreq, ctx.currentTime);
-    leadEnv.gain.setValueAtTime(0.2, ctx.currentTime);
-    leadEnv.gain.exponentialRampToValueAtTime(0.005, ctx.currentTime + 0.12);
-    leadOsc.connect(leadEnv); leadEnv.connect(musicGain);
-    leadOsc.start(); leadOsc.stop(ctx.currentTime + 0.12);
+    // 6) Arpeggio lead with echo (delay effect)
+    const arpPattern = [0, 2, 4, 7, 4, 2, 5, 3, 0, 3, 5, 7, 5, 3, 2, 0];
+    const arpIdx = arpPattern[barPos];
+    const rootIdx = progRoots[(step >> 4) % progRoots.length];
+    const leadNote = scale[Math.min((rootIdx + arpIdx) % 8, 7)];
+    playArpNote(leadNote, 0.16, 'square', 0.18, now);
+    // Echo/delay at half volume, offset by 2 steps
+    if (barPos % 2 === 0) {
+      playArpNote(leadNote * 1.002, 0.1, 'square', 0.06, now + tempoMs / 2000);
+    }
 
-    // 4) Chiptune Snare hit step
-    if (step % 4 === 2) {
-      playNoise(0.08, 0.25, 4000);
+    // 7) Second harmony arp (softer, offset)
+    if (barPos % 2 === 1) {
+      const harmNote = scale[Math.min((rootIdx + arpIdx + 3) % 8, 7)];
+      playArpNote(harmNote, 0.08, 'triangle', 0.07, now);
     }
 
     step++;
@@ -240,6 +283,37 @@ export function startMusic(): void {
   };
 
   musicTimer = window.setTimeout(loop, tempoMs);
+}
+
+function playArpNote(freq: number, dur: number, type: OscillatorType, vol: number, when: number): void {
+  if (!ctx || !musicGain) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, when);
+  gain.gain.setValueAtTime(vol, when);
+  gain.gain.exponentialRampToValueAtTime(0.001, when + dur);
+  osc.connect(gain); gain.connect(musicGain);
+  osc.start(when); osc.stop(when + dur);
+}
+
+function playNoiseInMusic(dur: number, vol: number, filterFreq: number): void {
+  if (!ctx || !musicGain) return;
+  const now = ctx.currentTime;
+  const bufferSize = ctx.sampleRate * dur;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.setValueAtTime(filterFreq, now);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(vol, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+  noise.connect(filter); filter.connect(gain); gain.connect(musicGain);
+  noise.start(now); noise.stop(now + dur);
 }
 
 export function stopMusic(): void {

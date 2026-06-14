@@ -339,7 +339,8 @@ function findSafeSpawn(radius: number, walls: Wall[], targetX?: number, targetY?
   return { x: dims.w / 2, y: dims.h / 2 };
 }
 
-function generateEnemies(level: number, walls: Wall[]): Enemy[] {
+function generateEnemies(level: number, walls: Wall[], difficulty: Difficulty): Enemy[] {
+  const hpMul = difficulty === 'hard' ? 2.0 : difficulty === 'normal' ? 1.5 : 1.0;
   const isBoss = level > 1 && level % 5 === 0;
   const baseCount = level === 1 ? 4 : Math.min(4 + Math.floor(level * 1.2), 16);
   const count = isBoss ? baseCount + 2 : baseCount;
@@ -377,6 +378,7 @@ function generateEnemies(level: number, walls: Wall[]): Enemy[] {
       }
     }
 
+    hp = Math.max(1, Math.round(hp * hpMul));
     const safeSpot = findSafeSpawn(size / 2 + 6, walls);
     enemies.push({
       id: nextEnemyId++,
@@ -396,7 +398,7 @@ function generateEnemies(level: number, walls: Wall[]): Enemy[] {
 
   if (isBoss) {
     const bossSize = Math.round(eBaseSize * 2.2);
-    const bossHp = 5 + Math.floor(level / 2);
+    const bossHp = Math.max(1, Math.round((5 + Math.floor(level / 2)) * hpMul));
     const bossSpot = findSafeSpawn(bossSize / 2 + 6, walls, dims.w / 2, dims.h * 0.3);
     enemies.push({
       id: nextEnemyId++,
@@ -442,7 +444,7 @@ export function initRoom(state: GameState, keepHealth = true): void {
     state.player.secondaryCooldown = 0;
   }
 
-  state.enemies = generateEnemies(state.roomLevel, state.walls);
+  state.enemies = generateEnemies(state.roomLevel, state.walls, state.selectedDifficulty);
   if (state.roomModifier === 'reinforced') {
     for (const e of state.enemies) {
       e.health += 1;
