@@ -22,9 +22,12 @@
 
 ## Equilibre gameplay
 - [x] Nerf Nova de Gel : zone limitée (rayon 250px), slow 65% pendant 2.5s au lieu de freeze total, dégâts +2
-- [x] Nerf lancer de dagues (Filou) : 1 dague NV1, +1 NV5, +1 NV10 (max 3), dégâts ×2/dague
+- [x] Nerf lancer de dagues (Filou) : 1 dague NV1, +1 NV5, +1 NV10 (max 3), dégâts plats par NV
 - [x] Rééquilibrer les classes : Warrior armure/crit, Ranger double tir/perçant, Rogue crit/assassinat
 - [x] Ajouter modes de difficulté : Facile (standard), Normal (-25% tir, -20% PV), Difficile (-50% tir, -40% PV)
+- [x] Rééquilibrage dégâts : dagues/vague épée = dégâts plats (ignorent bonusDamage), flèches/nova ×0.5 bonusDamage
+- [x] Rééquilibrage HP ennemis : formule exponentielle par salle (×2.5), types variés
+- [x] Armure ennemis : réduction dégâts projectiles/contact avec feedback "BLOQUÉ! 🛡️"
 - [ ] Ajouter mode Endless (salles infinies) avec leaderboard
 - [ ] Ajouter un système de sauvegarde (localStorage)
 
