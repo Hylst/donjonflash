@@ -289,7 +289,6 @@ function renderWall(ctx: CanvasRenderingContext2D, wall: Wall, time: number): vo
     const cx = wall.x + wall.width / 2, cy = wall.y + wall.height / 2;
     const pulse = 0.5 + Math.sin(time * 2 + wall.x * 0.02) * 0.5;
     ctx.save();
-    ctx.shadowColor = '#00ffd0'; ctx.shadowBlur = 12;
     ctx.strokeStyle = `rgba(0,255,208,${0.35 + pulse * 0.5})`;
     ctx.lineWidth = 2;
     ctx.strokeRect(cx - 10, cy - 10, 20, 20); ctx.strokeRect(cx - 5, cy - 5, 10, 10);
@@ -633,12 +632,11 @@ function renderEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number):
     ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(6, 0); ctx.lineTo(-4, 6); ctx.fill();
   } else if (type === 'shooter') {
     const a = time * 3 + id;
-    ctx.fillStyle = '#e085ff'; ctx.shadowColor = '#e085ff'; ctx.shadowBlur = 8;
+    ctx.fillStyle = '#e085ff';
     for (const i of [0, 1, 2]) {
       const ra = a + i * (Math.PI * 2 / 3);
       ctx.fillText('⬡', Math.cos(ra) * (half + 8), Math.sin(ra) * (half + 8));
     }
-    ctx.shadowBlur = 0;
     ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(0, 0, half, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = border; ctx.lineWidth = 2; ctx.stroke();
     ctx.fillStyle = '#ffd866'; ctx.fillRect(half - 2, -3, 16, 6);
@@ -663,11 +661,9 @@ function renderEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, time: number):
   // Eyes
   const eyeX = half * 0.45;
   ctx.fillStyle = (frozenTimer && frozenTimer > 0) ? '#ffffff' : isHit ? '#ffffff' : type === 'fast' ? '#ffffff' : '#ffeaab';
-  ctx.shadowColor = '#ff5500'; ctx.shadowBlur = 6;
   ctx.beginPath(); ctx.arc(eyeX, -5, 3.2, 0, Math.PI * 2); ctx.arc(eyeX, 5, 3.2, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#260000';
   ctx.beginPath(); ctx.arc(eyeX + 1.2, -5, 1.5, 0, Math.PI * 2); ctx.arc(eyeX + 1.2, 5, 1.5, 0, Math.PI * 2); ctx.fill();
-  ctx.shadowBlur = 0;
 
   ctx.restore(); // rotate
   ctx.restore(); // translate

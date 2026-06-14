@@ -28,7 +28,11 @@ interface Hud {
   doorOpen: boolean;
   activeScroll: SpellScroll | null;
   hasteActive: boolean;
-  invincibleActive: boolean;
+  hasteTime: number;
+  hasteMax: number;
+  shieldActive: boolean;
+  shieldTime: number;
+  shieldMax: number;
   isMuted: boolean;
 }
 
@@ -44,7 +48,7 @@ export default function App() {
   const [onboardingSlide, setOnboardingSlide] = useState<number>(0);
   const [hud, setHud] = useState<Hud>({
     status: 'menu', selectedClass: 'warrior', heroLevel: 1, xp: 0, xpNext: 100, roomLevel: 0, roomName: '', roomModifier: 'none', score: 0, combo: 0, comboPct: 0,
-    health: 7, maxHealth: 7, enemyCount: 0, chestCount: 0, goldKey: false, doorOpen: false, activeScroll: null, hasteActive: false, invincibleActive: false, isMuted: false,
+    health: 7, maxHealth: 7, enemyCount: 0, chestCount: 0, goldKey: false, doorOpen: false, activeScroll: null, hasteActive: false, hasteTime: 0, hasteMax: 1, shieldActive: false, shieldTime: 0, shieldMax: 1, isMuted: false,
   });
 
   const gameLoop = useCallback((timestamp: number) => {
@@ -87,7 +91,11 @@ export default function App() {
         doorOpen: !!(state.door && state.door.open && state.door.animProgress >= 1),
         activeScroll: state.player.activeScroll,
         hasteActive: state.player.activeBuffs.some(b => b.type === 'speed'),
-        invincibleActive: state.player.activeBuffs.some(b => b.type === 'shield'),
+        hasteTime: state.player.activeBuffs.find(b => b.type === 'speed')?.duration ?? 0,
+        hasteMax: state.player.activeBuffs.find(b => b.type === 'speed')?.maxDuration ?? 1,
+        shieldActive: state.player.activeBuffs.some(b => b.type === 'shield'),
+        shieldTime: state.player.activeBuffs.find(b => b.type === 'shield')?.duration ?? 0,
+        shieldMax: state.player.activeBuffs.find(b => b.type === 'shield')?.maxDuration ?? 1,
         isMuted: getMuteState(),
       });
     }
@@ -442,9 +450,23 @@ export default function App() {
           {/* Right Gauges */}
           <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             {/* Buff Halos UI */}
-            <div className="flex items-center gap-1">
-              {hud.hasteActive && <span className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-xs shadow-[0_0_10px_cyan] animate-spin" title="Hâte Vitesse +35%">⚡</span>}
-              {hud.invincibleActive && <span className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-amber-500/20 border border-amber-400 flex items-center justify-center text-xs shadow-[0_0_10px_gold] animate-pulse" title="Bouclier divin d'Invincibilité">🛡️</span>}
+            <div className="flex items-center gap-1.5">
+              {hud.hasteActive && (
+                <div className="flex flex-col items-center">
+                  <span className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-[10px] shadow-[0_0_10px_cyan] animate-spin" title={`Hâte +35% (${hud.hasteTime.toFixed(1)}s)`}>⚡</span>
+                  <div className="w-6 sm:w-7 h-1 mt-0.5 rounded-full bg-cyan-900/80 overflow-hidden">
+                    <div className="h-full bg-cyan-400 rounded-full transition-all duration-200" style={{ width: `${(hud.hasteTime / hud.hasteMax) * 100}%` }} />
+                  </div>
+                </div>
+              )}
+              {hud.shieldActive && (
+                <div className="flex flex-col items-center">
+                  <span className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-amber-500/20 border border-amber-400 flex items-center justify-center text-[10px] shadow-[0_0_10px_gold] animate-pulse" title={`Invincibilité (${hud.shieldTime.toFixed(1)}s)`}>🛡️</span>
+                  <div className="w-6 sm:w-7 h-1 mt-0.5 rounded-full bg-amber-900/80 overflow-hidden">
+                    <div className="h-full bg-amber-400 rounded-full transition-all duration-200" style={{ width: `${(hud.shieldTime / hud.shieldMax) * 100}%` }} />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Lifes / Hearts Jauge */}

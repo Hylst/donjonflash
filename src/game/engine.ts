@@ -58,6 +58,7 @@ export function createGameState(): GameState {
     goldKey: null,
     hitStop: 0,
     time: 0,
+    trapTimer: 0,
   };
 }
 
@@ -596,6 +597,7 @@ function shatter(particles: Particle[], x: number, y: number, color: string, bas
 }
 
 function floatText(texts: FloatingText[], x: number, y: number, text: string, color: string, size = 16): void {
+  if (texts.length > 20) { texts.splice(0, texts.length - 15); }
   texts.push({ x, y, text, life: 1.1, maxLife: 1.1, color, size, vy: -44 });
 }
 
@@ -717,24 +719,31 @@ export function update(state: GameState, dt: number, keys: Keys): void {
   }
   player.speed = player.baseSpeed * hasteMult;
 
-  if (state.roomModifier === 'trapped' && state.time % 3 < dt && player.invincibleTimer <= 0) {
-    const mitigated = Math.max(0, 1 - player.armor);
-    if (mitigated > 0) {
-      player.health -= mitigated;
-      player.invincibleTimer = 0.8;
-      state.damageFlash = 0.6;
-      state.flashColor = '#ff6600';
-      sfx.playerHurt();
-      floatText(state.floatingTexts, player.x, player.y - 26, '🔥 PIÈGE! -1 PV', '#ff6600', 16);
-      burst(state.particles, player.x, player.y, 10, '#ff6600', 120, 3, true, 'shard');
-      if (player.health <= 0) {
-        state.status = 'gameOver';
-        sfx.gameOver();
-        burst(state.particles, player.x, player.y, 60, '#33ff99', 350, 6, true);
-        floatText(state.floatingTexts, player.x, player.y - 32, 'TERRASSÉ...', '#ff4466', 22);
-        return;
+  if (!state.trapTimer) state.trapTimer = 0;
+  if (state.roomModifier === 'trapped') {
+    state.trapTimer += dt;
+    if (state.trapTimer >= 3 && player.invincibleTimer <= 0) {
+      state.trapTimer = 0;
+      const mitigated = Math.max(0, 1 - player.armor);
+      if (mitigated > 0) {
+        player.health -= mitigated;
+        player.invincibleTimer = 0.8;
+        state.damageFlash = 0.6;
+        state.flashColor = '#ff6600';
+        sfx.playerHurt();
+        floatText(state.floatingTexts, player.x, player.y - 26, '🔥 PIÈGE! -1 PV', '#ff6600', 16);
+        burst(state.particles, player.x, player.y, 10, '#ff6600', 120, 3, true, 'shard');
+        if (player.health <= 0) {
+          state.status = 'gameOver';
+          sfx.gameOver();
+          burst(state.particles, player.x, player.y, 60, '#33ff99', 350, 6, true);
+          floatText(state.floatingTexts, player.x, player.y - 32, 'TERRASSÉ...', '#ff4466', 22);
+          return;
+        }
       }
     }
+  } else {
+    state.trapTimer = 0;
   }
 
   // ---- Player Movement ----

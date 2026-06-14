@@ -200,6 +200,7 @@ export interface GameState {
   goldKey: GoldKey | null;
   hitStop: number;
   time: number;
+  trapTimer: number;
 }
 
 export interface Keys {
