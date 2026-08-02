@@ -1,5 +1,19 @@
 # Changelog — DonjonFlash
 
+## [1.2.0] 2026-08-03
+
+### Ajoute
+- Bouton « Comment ce jeu a ete fait » sur l'ecran de selection de classe, ouvrant une
+  modale avec la stack, les graphismes, la musique, les interactions, l'architecture et les
+  algorithmes notables (armes evolutives par niveau, modificateurs de salle aleatoires,
+  3 niveaux de difficulte). Etape 15 du chantier de retrofit decrit dans `todo.md` racine
+  du monorepo.
+
+### Verifie
+- Build propre, modale testee a l'ouverture/fermeture, aucune erreur console, aucun 404
+  (favicon hashe recopie avec le nouveau `index.html`, son nom de fichier avait change
+  depuis le dernier build deploye), aucun debordement horizontal en 390x844.
+
 ## [1.1.0] — 2025-06-15
 ### Ameliore
 - Reequilibrage degats : dagues/vague epee = degats plats par NV, flèches/nova ×0.5 bonusDamage

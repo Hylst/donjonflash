@@ -46,6 +46,7 @@ export default function App() {
   const lastTimeRef = useRef<number>(0);
   const hudAccumRef = useRef<number>(0);
   const [showTouch, setShowTouch] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   const [onboardingSlide, setOnboardingSlide] = useState<number>(0);
   const [hud, setHud] = useState<Hud>({
     status: 'menu', selectedClass: 'warrior', selectedDifficulty: 'easy', heroLevel: 1, xp: 0, xpNext: 100, roomLevel: 0, roomName: '', roomModifier: 'none', score: 0, combo: 0, comboPct: 0,
@@ -315,9 +316,34 @@ export default function App() {
             >
               TUTORIEL & RÈGLES ▶
             </button>
+            <button
+              onClick={() => setShowInfo(true)}
+              className="w-full sm:w-auto px-6 py-4 rounded-2xl border border-slate-700 bg-slate-900/60 active:scale-95 hover:bg-slate-800 text-slate-300 font-bold text-sm tracking-wider uppercase transition-all cursor-pointer"
+            >
+              ℹ️ Comment ce jeu a été fait
+            </button>
           </div>
           <div className="text-[10px] text-slate-500 tracking-wide mt-4 text-center">
             Hylst - Geoffroy · avec l'aide d'une IA · v6.0 Donjon Évolutif & Expérience
+          </div>
+        </div>
+      )}
+
+      {showInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4" onClick={() => setShowInfo(false)}>
+          <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-emerald-500/30 bg-[#0a0b14] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 space-y-3.5 text-sm leading-relaxed text-slate-300">
+              <h3 className="text-xl font-black bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">Comment ce jeu a été fait</h3>
+              <p><strong className="text-white">Stack :</strong> React 19, TypeScript 5.9, Tailwind CSS 4, Vite 7, compilé en un seul fichier HTML, aucune dépendance chargée depuis l'extérieur.</p>
+              <p><strong className="text-white">Graphismes :</strong> tout est dessiné en Canvas 2D à chaque image (rendu de la salle, textures de sol et de mur, héros, ennemis, projectiles), aucun sprite animé.</p>
+              <p><strong className="text-white">Musique &amp; sons :</strong> synthétisés en direct avec l'API Web Audio, aucun fichier audio chargé.</p>
+              <p><strong className="text-white">Interactions :</strong> clavier/souris ou tactile pour se déplacer et viser, sort spécial propre à chaque classe.</p>
+              <p><strong className="text-white">Architecture :</strong> moteur de jeu pur (<code>engine.ts</code>) séparé du rendu (<code>renderer.ts</code>), état de la boucle de jeu mis à jour à chaque frame.</p>
+              <p><strong className="text-white">Algorithmes notables :</strong> 3 classes aux armes évolutives par niveau (double tir, dagues multiples, balayage), chaque salle du donjon reçoit aléatoirement un modificateur (piégée, trésor, renforcée) qui change sa difficulté et ses récompenses, 3 niveaux de difficulté qui ajustent les dégâts et les PV ennemis.</p>
+            </div>
+            <div className="border-t border-white/10 p-4 text-center">
+              <button onClick={() => setShowInfo(false)} className="px-6 py-2.5 rounded-xl font-black text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-300 hover:brightness-110 active:scale-95 transition-all">Fermer</button>
+            </div>
           </div>
         </div>
       )}
