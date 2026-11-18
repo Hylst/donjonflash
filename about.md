@@ -24,5 +24,5 @@ DonjonFlash est un dungeon crawler frenetique avec :
 - 100% frontend, zero backend
 
 ## Contact
-- Email : geoffroy.streit@gmail.com
+- Email : geoffroy.streit@ik.me
 - GitHub : https://github.com/Hylst
