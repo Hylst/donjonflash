@@ -50,3 +50,7 @@ npm run dev
 ## Auteur
 
 **Geoffroy Streit** (Hylst) — geek, dev, ex-graphiste, ex-compositeur.
+
+## Licence
+
+Code : AGPL-3.0-or-later. Voir `LICENSE`.
