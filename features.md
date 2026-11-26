@@ -1,4 +1,4 @@
-# Fonctionnalites de DonjonFlash
+# Fonctionnalites de Donjon Éclair
 
 ## Gameplay
 - Action RPG tactique top-down

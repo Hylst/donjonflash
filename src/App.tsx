@@ -243,7 +243,7 @@ export default function App() {
               ⚔️
             </div>
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tighter bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_22px_rgba(0,255,150,0.5)] leading-tight">
-              DONJONFLASH
+              DONJON ÉCLAIR
             </h1>
             <p className="text-xs sm:text-sm text-slate-300/90 tracking-widest mt-1 uppercase">
               Action RPG Tactique · Rendu 360° · SFX 8-Bit
@@ -437,7 +437,7 @@ export default function App() {
             <div className="min-w-0 tracking-tight ml-1 sm:ml-2">
               <div className="flex items-baseline gap-2 truncate">
                 <span className="font-black text-emerald-300 text-sm sm:text-lg leading-none drop-shadow-[0_0_14px_rgba(0,255,150,0.5)]">
-                  DONJONFLASH
+                  DONJON ÉCLAIR
                 </span>
                 {(playing || paused) && (
                   <span className="text-xs sm:text-sm font-bold text-emerald-400 truncate">

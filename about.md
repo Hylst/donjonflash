@@ -1,9 +1,9 @@
-# A propos de DonjonFlash
+# A propos de Donjon Éclair
 
-**DonjonFlash** est un Action RPG tactique top-down开发é par **Geoffroy Streit** (alias **Hylst**).
+**Donjon Éclair** est un Action RPG tactique top-down开发é par **Geoffroy Streit** (alias **Hylst**).
 
 ## Le jeu
-DonjonFlash est un dungeon crawler frenetique avec :
+Donjon Éclair est un dungeon crawler frenetique avec :
 - 3 classes de heros avec des playstyles uniques
 - Salles proceduralement generees (6 types d'architecture)
 - Systeme de loot (potions, parchemins, nourriture)

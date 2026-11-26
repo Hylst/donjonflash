@@ -1,4 +1,4 @@
-# Structure de DonjonFlash
+# Structure de Donjon Éclair
 
 ```
 donjon-flash-game-development/
