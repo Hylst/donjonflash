@@ -1,5 +1,5 @@
 // ============================================================
-// DONJONFLASH — Canvas Renderer (Multi-Class Sprites, Spells, Chests)
+// DONJONFLASH : Canvas Renderer (Multi-Class Sprites, Spells, Chests)
 // Rendu riche, net, sans brouillard aveuglant.
 // Créateur : Hylst - Geoffroy avec l'aide d'une IA
 // ============================================================
@@ -864,7 +864,7 @@ function renderTransition(ctx: CanvasRenderingContext2D, state: GameState): void
     const isBoss = state.roomLevel > 1 && state.roomLevel % 5 === 0;
     const modLabel = state.roomModifier === 'trapped' ? ' [PIÉGÉE]' : state.roomModifier === 'treasure' ? ' [TRÉSOR]' : state.roomModifier === 'reinforced' ? ' [RENFORCÉE]' : '';
     const bossLabel = isBoss ? ' ⚔️ BOSS' : '';
-    ctx.fillText(`SALLE ${state.roomLevel}${bossLabel} — ${state.roomName.toUpperCase()}${modLabel}`, dims.w / 2, dims.h / 2 - 10);
+    ctx.fillText(`SALLE ${state.roomLevel}${bossLabel} : ${state.roomName.toUpperCase()}${modLabel}`, dims.w / 2, dims.h / 2 - 10);
     ctx.shadowBlur = 0;
 
     const diff = isBoss ? 'BOSS ⚔️' : state.roomLevel === 1 ? 'Très Facile (Initiation)' : state.roomLevel <= 3 ? 'Facile' : state.roomLevel <= 6 ? 'Moyen' : state.roomLevel <= 10 ? 'Difficile' : 'Infernal';

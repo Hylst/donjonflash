@@ -1,5 +1,5 @@
 // ============================================================
-// DONJONFLASH — Procedural Chiptune Audio Engine & SFX
+// DONJONFLASH : Procedural Chiptune Audio Engine & SFX
 // Créateur : Hylst - Geoffroy avec l'aide d'une IA
 // ============================================================
 
@@ -168,7 +168,7 @@ export const sfx = {
 };
 
 // ============================================================================
-// PROCEDURAL DUNGEON-SYNTH BGM — Enhanced
+// PROCEDURAL DUNGEON-SYNTH BGM : Enhanced
 // ============================================================================
 
 // Phrygian dominant scale (exotic dungeon feel)

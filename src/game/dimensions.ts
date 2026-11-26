@@ -1,5 +1,5 @@
 // ============================================================
-// DONJONFLASH — Dynamic Dimensions
+// DONJONFLASH : Dynamic Dimensions
 // The play space scales to fill the screen.
 // ============================================================
 

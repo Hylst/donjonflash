@@ -1,5 +1,5 @@
 // ============================================================
-// DONJONFLASH — Game Engine (Classes, Loot, Spells, Projectiles)
+// DONJONFLASH : Game Engine (Classes, Loot, Spells, Projectiles)
 // Créateur : Hylst - Geoffroy avec l'aide d'une IA
 // ============================================================
 
@@ -192,7 +192,7 @@ function generateArchitecture(level: number): Layout {
     };
     const modPrefix = prefixes[modifier];
     const base = baseNames[type][Math.floor(Math.random() * baseNames[type].length)];
-    name = modifier !== 'none' ? `${modPrefix[0]} — ${base}` : base;
+    name = modifier !== 'none' ? `${modPrefix[0]} : ${base}` : base;
   }
 
   const roomW = w - pad * 2;
@@ -643,25 +643,25 @@ function addXp(state: GameState, amount: number, x: number, y: number): void {
       p.maxHealth += 2;
       p.health = p.maxHealth;
       p.armor += 1;
-      if (p.heroLevel === 3) { lvlText = '🛡️ NIVEAU 3 — ARMURE +1 !'; }
-      else if (p.heroLevel === 6) { p.critChance += 0.2; lvlText = '⚔️ NIVEAU 6 — COUP CRITIQUE !'; }
-      else if (p.heroLevel === 10) { p.armor += 2; lvlText = '🛡️ NIVEAU 10 — PIÈGE D\'ACIER !'; }
-      else { lvlText = `🌟 NIVEAU ${p.heroLevel} — +2 PV, +1 Armure !`; }
+      if (p.heroLevel === 3) { lvlText = '🛡️ NIVEAU 3 : ARMURE +1 !'; }
+      else if (p.heroLevel === 6) { p.critChance += 0.2; lvlText = '⚔️ NIVEAU 6 : COUP CRITIQUE !'; }
+      else if (p.heroLevel === 10) { p.armor += 2; lvlText = '🛡️ NIVEAU 10 : PIÈGE D\'ACIER !'; }
+      else { lvlText = `🌟 NIVEAU ${p.heroLevel} : +2 PV, +1 Armure !`; }
     } else if (p.heroClass === 'ranger') {
       p.maxHealth += 1;
       p.health = p.maxHealth;
-      if (p.heroLevel === 3) { p.rangerMultiShot = true; lvlText = '🏹 NIVEAU 3 — DOUBLE TIR !'; }
-      else if (p.heroLevel === 6) { p.rangerPierceBonus = true; lvlText = '🏹 NIVEAU 6 — FLÈCHE PERÇANTE !'; }
-      else if (p.heroLevel === 10) { p.baseCooldown *= 0.85; lvlText = '🏹 NIVEAU 10 — TIR RAPIDE !'; }
-      else { lvlText = `🌟 NIVEAU ${p.heroLevel} — +1 PV, +1 Dégâts !`; }
+      if (p.heroLevel === 3) { p.rangerMultiShot = true; lvlText = '🏹 NIVEAU 3 : DOUBLE TIR !'; }
+      else if (p.heroLevel === 6) { p.rangerPierceBonus = true; lvlText = '🏹 NIVEAU 6 : FLÈCHE PERÇANTE !'; }
+      else if (p.heroLevel === 10) { p.baseCooldown *= 0.85; lvlText = '🏹 NIVEAU 10 : TIR RAPIDE !'; }
+      else { lvlText = `🌟 NIVEAU ${p.heroLevel} : +1 PV, +1 Dégâts !`; }
     } else if (p.heroClass === 'rogue') {
       p.maxHealth += 1;
       p.health = p.maxHealth;
       p.baseSpeed += 8;
-      if (p.heroLevel === 3) { p.critChance += 0.15; lvlText = '🗡️ NIVEAU 3 — POISON !'; }
-      else if (p.heroLevel === 6) { p.rogueCritMul = 2.5; lvlText = '🗡️ NIVEAU 6 — ASSASSINAT !'; }
-      else if (p.heroLevel === 10) { p.baseCooldown *= 0.8; lvlText = '🗡️ NIVEAU 10 — LAMES JUMELLES !'; }
-      else { lvlText = `🌟 NIVEAU ${p.heroLevel} — +1 PV, +Vitesse !`; }
+      if (p.heroLevel === 3) { p.critChance += 0.15; lvlText = '🗡️ NIVEAU 3 : POISON !'; }
+      else if (p.heroLevel === 6) { p.rogueCritMul = 2.5; lvlText = '🗡️ NIVEAU 6 : ASSASSINAT !'; }
+      else if (p.heroLevel === 10) { p.baseCooldown *= 0.8; lvlText = '🗡️ NIVEAU 10 : LAMES JUMELLES !'; }
+      else { lvlText = `🌟 NIVEAU ${p.heroLevel} : +1 PV, +Vitesse !`; }
     }
 
     floatText(state.floatingTexts, p.x, p.y - 40, lvlText, '#ffd700', 22);
@@ -1346,7 +1346,7 @@ export function update(state: GameState, dt: number, keys: Keys): void {
       state.combo = 0;
       addXp(state, 50, dims.w / 2, dims.h / 2); // 50 XP bonus for clearing room!
       sfx.victoryStep();
-      floatText(state.floatingTexts, dims.w / 2, dims.h / 2 - 80, `VICTOIRE — SALLE ${state.roomLevel}`, '#66ffee', 26);
+      floatText(state.floatingTexts, dims.w / 2, dims.h / 2 - 80, `VICTOIRE : SALLE ${state.roomLevel}`, '#66ffee', 26);
       burst(state.particles, dims.w / 2, dims.h / 2, 42, '#66ffee', 200, 4.5, true);
       initRoom(state, true);
     }

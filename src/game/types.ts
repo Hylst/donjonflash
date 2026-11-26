@@ -1,5 +1,5 @@
 // ============================================================
-// DONJONFLASH — Types
+// DONJONFLASH : Types
 // Créateur : Hylst - Geoffroy avec l'aide d'une IA
 // ============================================================
 
