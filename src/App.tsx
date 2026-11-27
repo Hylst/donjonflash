@@ -246,7 +246,7 @@ export default function App() {
               DONJON ÉCLAIR
             </h1>
             <p className="text-xs sm:text-sm text-slate-300/90 tracking-widest mt-1 uppercase">
-              Action RPG Tactique · Rendu 360° · SFX 8-Bit
+              Action RPG Tactique · Vue de dessus · SFX 8-Bit
             </p>
           </div>
 
